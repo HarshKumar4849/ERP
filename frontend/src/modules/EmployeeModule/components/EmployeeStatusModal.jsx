@@ -44,7 +44,7 @@ export default function EmployeeStatusModal({
       onOk={() => form.submit()}
       confirmLoading={loading}
       okText="Update Status"
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={handleFinish} style={{ marginTop: 16 }}>
         <Form.Item

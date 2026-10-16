@@ -188,7 +188,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
       width={typeof window !== 'undefined' && window.innerWidth < 880 ? '100%' : 880}
       open={visible}
       onClose={onClose}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Overview Card */}
       <Card
@@ -550,7 +550,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
         open={deliverableModalOpen}
         onCancel={() => setDeliverableModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={delivForm} layout="vertical" onFinish={handleAddDeliverable}>
           <Form.Item name="title" label="Deliverable Title" rules={[{ required: true }]}>
@@ -576,7 +576,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
         open={meetingModalOpen}
         onCancel={() => setMeetingModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={meetForm} layout="vertical" onFinish={handleAddMeeting}>
           <Form.Item name="title" label="Meeting Title" rules={[{ required: true }]}>
@@ -605,7 +605,7 @@ export default function ProjectWorkspaceModal({ visible, onClose, project, onRef
         open={docModalOpen}
         onCancel={() => setDocModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={docForm} layout="vertical" onFinish={handleAddDocument}>
           <Form.Item name="title" label="Document Title" rules={[{ required: true }]}>

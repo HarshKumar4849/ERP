@@ -23,7 +23,6 @@ export default function RenewServiceModal({ visible, onClose, service, onSuccess
 
   useEffect(() => {
     if (visible && service) {
-      // Calculate suggested next renewal date
       const currentRenewal = service.renewalDate ? dayjs(service.renewalDate) : dayjs();
       const base = currentRenewal.isAfter(dayjs()) ? currentRenewal : dayjs();
 
@@ -101,7 +100,7 @@ export default function RenewServiceModal({ visible, onClose, service, onSuccess
           Confirm Renewal
         </Button>,
       ]}
-      destroyOnClose
+      destroyOnHidden
     >
       <Alert
         message={

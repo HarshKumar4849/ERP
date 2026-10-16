@@ -186,7 +186,7 @@ export default function TemplateFormModal({
           {isEditMode ? 'Save Changes' : 'Create Template'}
         </Button>,
       ]}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" requiredMark="optional">
         <Row gutter={16}>
