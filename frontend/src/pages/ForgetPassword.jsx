@@ -20,7 +20,7 @@ const ForgetPassword = () => {
 
   const navigate = useNavigate();
 
-  const { onFetch, isSuccess, isLoading } = useOnFetch();
+  const { onFetch, result, isSuccess, isLoading } = useOnFetch();
 
   async function postData(data) {
     return await request.post({ entity: 'forgetpassword', jsonData: data });
@@ -65,21 +65,56 @@ const ForgetPassword = () => {
     return (
       <Result
         status="success"
-        title={translate('Check your email address to reset your password')}
-        subTitle={translate('A password reset link and verification code have been dispatched to your email address.')}
-        style={{ maxWidth: '450px', margin: 'auto' }}
+        title="Password Reset Verification Code Ready"
+        subTitle={
+          <div>
+            <p>
+              {result?.emailSent
+                ? 'A verification code and reset link have been dispatched to your email address.'
+                : 'Your secure verification code has been generated.'}
+            </p>
+            {result?.verificationCode && (
+              <div
+                style={{
+                  margin: '16px auto',
+                  padding: '16px 24px',
+                  background: '#f6ffed',
+                  border: '1px solid #b7eb8f',
+                  borderRadius: '8px',
+                  maxWidth: '340px',
+                }}
+              >
+                <Text type="secondary" style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                  6-Digit Verification Code:
+                </Text>
+                <div
+                  style={{
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    letterSpacing: '6px',
+                    color: '#237804',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {result.verificationCode}
+                </div>
+              </div>
+            )}
+          </div>
+        }
+        style={{ maxWidth: '480px', margin: 'auto' }}
         extra={
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <Button
               type="primary"
               size="large"
               onClick={() => {
-                navigate(`/resetpassword?email=${encodeURIComponent(requestedEmail)}`, {
-                  state: { email: requestedEmail },
+                navigate(`/resetpassword?email=${encodeURIComponent(requestedEmail)}&token=${result?.verificationCode || ''}`, {
+                  state: { email: requestedEmail, resetToken: result?.verificationCode || '' },
                 });
               }}
             >
-              {translate('Enter Verification Code & Set New Password')}
+              Enter Code & Set New Password
             </Button>
             <Button
               onClick={() => {

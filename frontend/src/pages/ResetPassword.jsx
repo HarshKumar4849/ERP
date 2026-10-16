@@ -58,6 +58,7 @@ const ResetPassword = () => {
           className="login-form"
           initialValues={{
             email: defaultEmail,
+            resetToken: activeResetToken,
             remember: true,
           }}
           onFinish={onFinish}
