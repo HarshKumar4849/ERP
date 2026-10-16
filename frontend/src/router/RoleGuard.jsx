@@ -73,7 +73,7 @@ export default function RoleGuard({ moduleKey, children }) {
                   )}
                 </div>
                 <Paragraph type="secondary" style={{ fontSize: '13px', marginTop: 16 }}>
-                  Under TecMotiv ERP Role-Based Access Control, this resource is restricted to authorized personnel. Contact your Administrator or HR department if you require access.
+                  Under Tecmotiv ERP Role-Based Access Control, this resource is restricted to authorized personnel. Contact your Administrator or HR department if you require access.
                 </Paragraph>
               </div>
             }

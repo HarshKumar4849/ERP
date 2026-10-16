@@ -541,7 +541,7 @@ export default function EventsList({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#595959', fontSize: 13, marginBottom: 12 }}>
                       <EnvironmentOutlined style={{ color: '#fa541c' }} />
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {ev.venue || ev.location || 'TecMotiv Auditorium'}
+                        {ev.venue || ev.location || 'Tecmotiv Auditorium'}
                       </span>
                       {ev.isVirtual && (
                         <Tag color="cyan" style={{ fontSize: 10, padding: '0 4px', margin: 0 }}>

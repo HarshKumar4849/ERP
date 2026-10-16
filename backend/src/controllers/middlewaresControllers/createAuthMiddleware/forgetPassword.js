@@ -94,7 +94,7 @@ const forgetPassword = async (req, res, { userModel }) => {
           name: user.name,
           link,
           otp: resetOtp,
-          subject: 'Reset your password | TecMotiv ERP',
+          subject: 'Reset your password | Tecmotiv ERP',
           idurar_app_email,
           type: 'passwordVerfication',
         });

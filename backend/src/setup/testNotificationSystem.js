@@ -21,7 +21,7 @@ async function runTests() {
     let user = await Admin.findOne({ email: 'admin@demo.com' }) || await Admin.findOne({});
     if (!user) {
       user = await new Admin({
-        name: 'TecMotiv',
+        name: 'Tecmotiv',
         surname: 'Administrator',
         email: 'test_admin@tecmotiv.com',
         role: 'admin',
@@ -142,7 +142,7 @@ async function runTests() {
 
     // 12. Event reminder
     await notificationService.notifyEventReminder({
-      event: { _id: fakeId, title: 'All-Hands Town Hall', startDate: new Date(), venue: 'TecMotiv Main Hall' },
+      event: { _id: fakeId, title: 'All-Hands Town Hall', startDate: new Date(), venue: 'Tecmotiv Main Hall' },
       participantUserIds: [user._id],
     });
 

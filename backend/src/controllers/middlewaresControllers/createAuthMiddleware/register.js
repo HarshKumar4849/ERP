@@ -88,17 +88,17 @@ const register = async (req, res, { userModel }) => {
     const welcomeHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e8e8e8; overflow: hidden;">
         <div style="background: #002244; padding: 28px 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">TecMotiv ERP</h1>
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Tecmotiv ERP</h1>
           <p style="color: #69c0ff; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Welcome to the Team</p>
         </div>
         <div style="padding: 36px 32px;">
-          <h2 style="color: #1f1f1f; margin-top: 0; font-size: 20px;">Welcome to TecMotiv, ${name}!</h2>
+          <h2 style="color: #1f1f1f; margin-top: 0; font-size: 20px;">Welcome to Tecmotiv, ${name}!</h2>
           <p style="color: #595959; font-size: 15px; line-height: 1.6;">
-            Your employee account has been created successfully. You can now log in to TecMotiv ERP with your email and password.
+            Your employee account has been created successfully. You can now log in to Tecmotiv ERP with your email and password.
           </p>
         </div>
         <div style="background: #fafafa; padding: 18px 32px; text-align: center; border-top: 1px solid #f0f0f0;">
-          <p style="color: #bfbfbf; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} TecMotiv ERP. All rights reserved.</p>
+          <p style="color: #bfbfbf; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} Tecmotiv ERP. All rights reserved.</p>
         </div>
       </div>
     `;
@@ -106,9 +106,9 @@ const register = async (req, res, { userModel }) => {
     try {
       mail.send({
         to: cleanEmail,
-        subject: `Welcome to TecMotiv ERP, ${name}!`,
+        subject: `Welcome to Tecmotiv ERP, ${name}!`,
         html: welcomeHtml,
-        text: `Welcome to TecMotiv ERP, ${name}! Your employee account has been created successfully and is ready to use.`,
+        text: `Welcome to Tecmotiv ERP, ${name}! Your employee account has been created successfully and is ready to use.`,
       }).catch((mailErr) => {
         console.warn('Welcome email skipped:', mailErr.message);
       });

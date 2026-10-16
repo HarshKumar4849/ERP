@@ -126,7 +126,7 @@ export default function EventDetailsDrawer({
             border: `1px dashed ${themeColor}40`,
           }}
         >
-          <Text style={{ fontSize: 13, color: '#8c8c8c' }}>TecMotiv Official Event</Text>
+          <Text style={{ fontSize: 13, color: '#8c8c8c' }}>Tecmotiv Official Event</Text>
           <Title level={3} style={{ margin: '4px 0 0', color: '#002244' }}>
             {event.title || event.eventName}
           </Title>
@@ -166,7 +166,7 @@ export default function EventDetailsDrawer({
               <div>
                 <Text type="secondary" style={{ fontSize: 12 }}>VENUE</Text>
                 <div style={{ fontWeight: 600, color: '#262626' }}>
-                  {event.venue || event.location || 'TecMotiv Auditorium'}
+                  {event.venue || event.location || 'Tecmotiv Auditorium'}
                 </div>
                 {event.isVirtual && (
                   <Tag color="cyan" style={{ marginTop: 4 }}>
@@ -224,7 +224,7 @@ export default function EventDetailsDrawer({
       {/* Host & Department */}
       <Descriptions size="small" column={2} bordered style={{ marginBottom: 20 }}>
         <Descriptions.Item label="Organizer">
-          <Text strong>{event.organizerName || 'TecMotiv Events Team'}</Text>
+          <Text strong>{event.organizerName || 'Tecmotiv Events Team'}</Text>
         </Descriptions.Item>
         <Descriptions.Item label="Department">
           <Tag color="blue">{event.department || 'All Departments'}</Tag>
@@ -436,7 +436,7 @@ export default function EventDetailsDrawer({
                 <Tag color="green" style={{ fontWeight: 600 }}>{report.attendanceCount} Attendees</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Reported By">
-                {report.submittedBy || 'TecMotiv HR'}
+                {report.submittedBy || 'Tecmotiv HR'}
               </Descriptions.Item>
             </Descriptions>
 

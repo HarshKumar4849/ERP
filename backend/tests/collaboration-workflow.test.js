@@ -78,7 +78,7 @@ test('1. Project Lifecycle: HR & Admin can create projects, employees denied', a
     },
     body: JSON.stringify({
       name: 'Project Alpha Engineering',
-      client: 'TecMotiv Core',
+      client: 'Tecmotiv Core',
       category: 'MDS',
       department: 'Engineering',
       projectManager: empAId,
@@ -103,7 +103,7 @@ test('1. Project Lifecycle: HR & Admin can create projects, employees denied', a
     },
     body: JSON.stringify({
       name: 'Project Beta Marketing',
-      client: 'TecMotiv Growth',
+      client: 'Tecmotiv Growth',
       category: 'B2B',
       department: 'Marketing',
       projectManager: empBId,

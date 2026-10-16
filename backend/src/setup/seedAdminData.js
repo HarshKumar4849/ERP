@@ -368,7 +368,7 @@ async function seedAdminData() {
         status: 'Completed',
         location: 'Supply Storage',
         responsiblePerson: 'Admin Executive',
-        notes: 'Welcome kits, branded TecMotiv notebooks, highlighters, post-its, and print paper.',
+        notes: 'Welcome kits, branded Tecmotiv notebooks, highlighters, post-its, and print paper.',
         createdBy: adminUser._id,
       },
       {

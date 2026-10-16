@@ -175,7 +175,7 @@ export default function TemplateLibrary({ userRole }) {
       >
         <div>
           <Title level={2} style={{ margin: 0, color: '#002244' }}>
-            TecMotiv Template Library
+            Tecmotiv Template Library
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>
             Standardized company templates with automated variable interpolation and live preview.
@@ -351,7 +351,7 @@ export default function TemplateLibrary({ userRole }) {
                       ellipsis={{ rows: 2 }}
                       style={{ color: '#595959', fontSize: 13, marginBottom: 12, minHeight: 38 }}
                     >
-                      {tmpl.description || 'Standard TecMotiv automated template.'}
+                      {tmpl.description || 'Standard Tecmotiv automated template.'}
                     </Paragraph>
 
                     {/* Subject snippet if present */}

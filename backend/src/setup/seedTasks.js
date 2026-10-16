@@ -21,7 +21,7 @@ async function seedTasks() {
     const emp2 = await Employee.findOne({ email: 'employee2@tecmotiv.com' });
     const deptHeadEmp = await Employee.findOne({ email: 'depthead@tecmotiv.com' });
 
-    const coreProject = await Project.findOne({ name: 'TecMotiv ERP Core Migration' });
+    const coreProject = await Project.findOne({ name: 'Tecmotiv ERP Core Migration' });
     const cloudProject = await Project.findOne({ name: 'Cloud Infrastructure Modernization' });
     const hrProject = await Project.findOne({ name: 'Employee Engagement 360' });
 
@@ -56,7 +56,7 @@ async function seedTasks() {
         reviewerName: 'David Head',
         department: 'Engineering',
         project: coreProject?._id,
-        projectName: coreProject ? coreProject.name : 'TecMotiv ERP Core Migration',
+        projectName: coreProject ? coreProject.name : 'Tecmotiv ERP Core Migration',
         priority: 'High',
         dueDate: today,
         status: 'In Progress',
@@ -171,7 +171,7 @@ async function seedTasks() {
         reviewerName: 'David Head',
         department: 'Engineering',
         project: coreProject?._id,
-        projectName: coreProject ? coreProject.name : 'TecMotiv ERP Core Migration',
+        projectName: coreProject ? coreProject.name : 'Tecmotiv ERP Core Migration',
         priority: 'Medium',
         dueDate: yesterday,
         status: 'Completed',

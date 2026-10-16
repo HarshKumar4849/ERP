@@ -22,7 +22,7 @@ async function setupApp() {
     const adminAccounts = [
       {
         email: 'admin@admin.com',
-        name: 'TecMotiv',
+        name: 'Tecmotiv',
         surname: 'Admin',
         enabled: true,
         role: 'owner',

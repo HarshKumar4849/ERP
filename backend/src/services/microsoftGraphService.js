@@ -18,7 +18,7 @@ const DEFAULT_SCOPES = 'offline_access Calendars.ReadWrite User.Read';
 const sandboxMailbox = {
   events: new Map(),
   userProfile: {
-    displayName: 'TecMotiv Outlook Sync Account',
+    displayName: 'Tecmotiv Outlook Sync Account',
     mail: 'tecmotiv.calendar@outlook.com',
     userPrincipalName: 'tecmotiv.calendar@outlook.com',
     id: 'ms-graph-user-001',
@@ -206,10 +206,10 @@ const mapToGraphEvent = (event) => {
   }
 
   return {
-    subject: event.title || event.eventName || 'TecMotiv Event',
+    subject: event.title || event.eventName || 'Tecmotiv Event',
     body: {
       contentType: 'HTML',
-      content: `<p>${(event.description || '').replace(/\n/g, '<br/>')}</p><p><em>Synced via TecMotiv ERP</em></p>`,
+      content: `<p>${(event.description || '').replace(/\n/g, '<br/>')}</p><p><em>Synced via Tecmotiv ERP</em></p>`,
     },
     start: {
       dateTime: start.toISOString(),
@@ -220,7 +220,7 @@ const mapToGraphEvent = (event) => {
       timeZone: 'UTC',
     },
     location: {
-      displayName: event.location || event.venue || 'TecMotiv Corporate Auditorium',
+      displayName: event.location || event.venue || 'Tecmotiv Corporate Auditorium',
     },
     isOnlineMeeting: Boolean(event.isVirtual || event.meetingLink),
     onlineMeetingUrl: event.meetingLink || undefined,
@@ -478,7 +478,7 @@ const syncEventsWithOutlook = async (integration, options = {}) => {
     // -------------------------------------------------------------------------
     if (direction === 'from-outlook' || direction === 'two-way') {
       for (const oEvent of outlookEvents) {
-        // Find if TecMotiv already has this event
+        // Find if Tecmotiv already has this event
         let existingTecmotivEvent = tecmotivEvents.find(
           (t) => t.outlookEventId === oEvent.id
         );
@@ -494,7 +494,7 @@ const syncEventsWithOutlook = async (integration, options = {}) => {
         }
 
         if (existingTecmotivEvent) {
-          // If TecMotiv already has it
+          // If Tecmotiv already has it
           if (!existingTecmotivEvent.outlookEventId) {
             existingTecmotivEvent.outlookEventId = oEvent.id;
             existingTecmotivEvent.lastSyncedToOutlook = new Date();
@@ -510,11 +510,11 @@ const syncEventsWithOutlook = async (integration, options = {}) => {
             await existingTecmotivEvent.save();
             syncStats.updatedInTecmotiv++;
           } else {
-            // TECMOTIV is Source of Truth: keep TecMotiv values
+            // TECMOTIV is Source of Truth: keep Tecmotiv values
             syncStats.skippedDuplicates++;
           }
         } else {
-          // Outlook event does not exist in TecMotiv -> Create in TecMotiv
+          // Outlook event does not exist in Tecmotiv -> Create in Tecmotiv
           try {
             const startDateTime = oEvent.start?.dateTime ? new Date(oEvent.start.dateTime) : new Date();
             const endDateTime = oEvent.end?.dateTime ? new Date(oEvent.end.dateTime) : startDateTime;
@@ -528,8 +528,8 @@ const syncEventsWithOutlook = async (integration, options = {}) => {
               endDate: endDateTime,
               date: startDateTime,
               time: '10:00 AM',
-              location: oEvent.location?.displayName || 'TecMotiv Corporate Auditorium',
-              venue: oEvent.location?.displayName || 'TecMotiv Corporate Auditorium',
+              location: oEvent.location?.displayName || 'Tecmotiv Corporate Auditorium',
+              venue: oEvent.location?.displayName || 'Tecmotiv Corporate Auditorium',
               department: 'All',
               isVirtual: Boolean(oEvent.isOnlineMeeting),
               meetingLink: oEvent.onlineMeetingUrl || '',

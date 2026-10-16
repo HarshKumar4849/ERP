@@ -20,7 +20,7 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
 exports.send = async ({ to, subject, html, text }) => {
   const from =
     process.env.EMAIL_FROM ||
-    (process.env.EMAIL_USER ? `TecMotiv ERP <${process.env.EMAIL_USER}>` : 'TecMotiv ERP <no-reply@tecmotiv.com>');
+    (process.env.EMAIL_USER ? `Tecmotiv ERP <${process.env.EMAIL_USER}>` : 'Tecmotiv ERP <no-reply@tecmotiv.com>');
 
   let lastError = null;
 
@@ -28,7 +28,7 @@ exports.send = async ({ to, subject, html, text }) => {
   if (process.env.BREVO_API_KEY) {
     try {
       const senderEmail = process.env.EMAIL_USER || 'hkp12345h@gmail.com';
-      const senderName = process.env.EMAIL_FROM_NAME || 'TecMotiv ERP';
+      const senderName = process.env.EMAIL_FROM_NAME || 'Tecmotiv ERP';
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -60,7 +60,7 @@ exports.send = async ({ to, subject, html, text }) => {
   if (process.env.RESEND_API && process.env.RESEND_API !== 'test') {
     try {
       const resend = new Resend(process.env.RESEND_API);
-      const resendFrom = process.env.EMAIL_FROM || 'TecMotiv ERP <onboarding@resend.dev>';
+      const resendFrom = process.env.EMAIL_FROM || 'Tecmotiv ERP <onboarding@resend.dev>';
       const { data, error } = await resend.emails.send({
         from: resendFrom,
         to,
@@ -85,7 +85,7 @@ exports.send = async ({ to, subject, html, text }) => {
       const smtpFrom =
         process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('resend.dev')
           ? process.env.EMAIL_FROM
-          : (process.env.EMAIL_USER ? `TecMotiv ERP <${process.env.EMAIL_USER}>` : 'TecMotiv ERP <no-reply@tecmotiv.com>');
+          : (process.env.EMAIL_USER ? `Tecmotiv ERP <${process.env.EMAIL_USER}>` : 'Tecmotiv ERP <no-reply@tecmotiv.com>');
       const info = await transporter.sendMail({
         from: smtpFrom,
         to,

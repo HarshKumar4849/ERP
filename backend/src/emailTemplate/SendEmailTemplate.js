@@ -1,4 +1,4 @@
-exports.SendNotification = ({ title = 'TecMotiv ERP Notification', name = '', message = '', time = new Date() }) => {
+exports.SendNotification = ({ title = 'Tecmotiv ERP Notification', name = '', message = '', time = new Date() }) => {
   return `
     <div>
         <head data-id="__react-email-head">
@@ -10,7 +10,7 @@ exports.SendNotification = ({ title = 'TecMotiv ERP Notification', name = '', me
             <hr data-id="react-email-hr" style="width:100%;border:none;border-top:1px solid #eaeaea; margin: 20px 0;" />
             <p style="font-size:15px;line-height:24px;">Hello ${name},</p>
             <p style="font-size:14px;line-height:24px;">${message}</p>
-            <p style="font-size:12px;color:#888;margin-top:30px;">Sent from TecMotiv ERP at ${time}</p>
+            <p style="font-size:12px;color:#888;margin-top:30px;">Sent from Tecmotiv ERP at ${time}</p>
         </body>
     </div>
   `;

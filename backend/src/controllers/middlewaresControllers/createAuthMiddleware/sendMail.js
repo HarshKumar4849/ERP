@@ -7,7 +7,7 @@ const sendMail = async ({
   link,
   otp,
   idurar_app_email,
-  subject = 'Verify your email | TecMotiv ERP',
+  subject = 'Verify your email | Tecmotiv ERP',
   type = 'emailVerfication',
   emailToken,
 }) => {
@@ -15,7 +15,7 @@ const sendMail = async ({
     to: email,
     subject,
     html: passwordVerfication({ name, link, otp }),
-    text: `Hello ${name || 'User'},\n\nWe received a request to reset your password on TecMotiv ERP.\n\nYour 6-digit verification code is: ${otp}\n\nOr click this link to reset your password directly:\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
+    text: `Hello ${name || 'User'},\n\nWe received a request to reset your password on Tecmotiv ERP.\n\nYour 6-digit verification code is: ${otp}\n\nOr click this link to reset your password directly:\n${link}\n\nIf you did not request this, you can safely ignore this email.`,
   });
 };
 

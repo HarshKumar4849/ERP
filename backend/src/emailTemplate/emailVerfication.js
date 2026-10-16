@@ -19,7 +19,7 @@ exports.passwordVerfication = ({
             <h2 data-id="react-email-heading">${title}</h2>
             <hr data-id="react-email-hr" style="width:100%;border:none;border-top:1px solid #eaeaea" />
             <p data-id="react-email-text" style="font-size:14px;line-height:24px;margin:16px 0">Hello ${name},</p>
-            <p data-id="react-email-text" style="font-size:14px;line-height:24px;margin:16px 0">We have received a request to reset the password for your account on TecMotiv ERP. To proceed with the password reset, please click on the link provided below:</p>
+            <p data-id="react-email-text" style="font-size:14px;line-height:24px;margin:16px 0">We have received a request to reset the password for your account on Tecmotiv ERP. To proceed with the password reset, please click on the link provided below:</p>
             <div style="text-align: center; margin: 24px 0;">
                 <a href="${link}" style="background: #002244; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">Reset Password Now</a>
             </div>

@@ -1,3 +1,3 @@
-# TecMotiv-ERP
+# Tecmotiv-ERP
 
 Enterprise platform for HR, Administration, Operations & Employee Management.

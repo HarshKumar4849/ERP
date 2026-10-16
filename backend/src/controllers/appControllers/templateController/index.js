@@ -241,14 +241,14 @@ const preview = async (req, res) => {
     // Default system dictionary
     const now = new Date();
     const dictionary = {
-      companyName: 'TecMotiv Solutions Pvt. Ltd.',
-      companyAddress: 'TecMotiv Tower, Tech Enclave, Outer Ring Road, Bengaluru, Karnataka, 560103',
+      companyName: 'Tecmotiv Solutions Pvt. Ltd.',
+      companyAddress: 'Tecmotiv Tower, Tech Enclave, Outer Ring Road, Bengaluru, Karnataka, 560103',
       currentDate: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       effectiveDate: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
       managerName: 'Operations Director',
-      eventName: 'TecMotiv Corporate Showcase',
+      eventName: 'Tecmotiv Corporate Showcase',
       eventDate: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      venue: 'TecMotiv Corporate Auditorium',
+      venue: 'Tecmotiv Corporate Auditorium',
       yearsCompleted: '3',
       festivalName: 'Diwali',
       awardTitle: 'Excellence in Engineering',

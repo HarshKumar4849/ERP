@@ -93,7 +93,7 @@ export default function EventFormModal({
           endTime: eventData.endTime ? dayjs(eventData.endTime, 'hh:mm A') : end,
           venue: eventData.venue || eventData.location || '',
           department: eventData.department || 'All',
-          organizerName: eventData.organizerName || 'TecMotiv Events Team',
+          organizerName: eventData.organizerName || 'Tecmotiv Events Team',
           isVirtual: Boolean(eventData.isVirtual),
           meetingLink: eventData.meetingLink || '',
           poster: eventData.poster || '',
@@ -113,9 +113,9 @@ export default function EventFormModal({
           date: defaultDate,
           startTime: dayjs().set('hour', 10).set('minute', 0),
           endTime: dayjs().set('hour', 12).set('minute', 0),
-          venue: 'TecMotiv Corporate Auditorium',
+          venue: 'Tecmotiv Corporate Auditorium',
           department: 'All',
-          organizerName: 'TecMotiv People & Culture Committee',
+          organizerName: 'Tecmotiv People & Culture Committee',
           isVirtual: false,
           meetingLink: '',
           poster: '',
@@ -165,10 +165,10 @@ export default function EventFormModal({
         time: startTimeStr,
         startTime: startTimeStr,
         endTime: endTimeStr,
-        venue: values.venue || 'TecMotiv Corporate Auditorium',
-        location: values.venue || 'TecMotiv Corporate Auditorium',
+        venue: values.venue || 'Tecmotiv Corporate Auditorium',
+        location: values.venue || 'Tecmotiv Corporate Auditorium',
         department: values.department || 'All',
-        organizerName: values.organizerName || 'TecMotiv Events Team',
+        organizerName: values.organizerName || 'Tecmotiv Events Team',
         isVirtual: Boolean(values.isVirtual),
         meetingLink: values.meetingLink || '',
         poster: values.poster || '',
@@ -297,7 +297,7 @@ export default function EventFormModal({
             <Form.Item name="venue" label="Venue / Physical Location">
               <Input
                 prefix={<EnvironmentOutlined style={{ color: '#8c8c8c' }} />}
-                placeholder="e.g. TecMotiv Grand Auditorium or Banquet Hall"
+                placeholder="e.g. Tecmotiv Grand Auditorium or Banquet Hall"
               />
             </Form.Item>
           </Col>
@@ -331,7 +331,7 @@ export default function EventFormModal({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="organizerName" label="Organizer / Host Committee">
-              <Input placeholder="e.g. TecMotiv People & Culture Board" />
+              <Input placeholder="e.g. Tecmotiv People & Culture Board" />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -403,7 +403,7 @@ export default function EventFormModal({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="invitationSubject" label="Invitation Subject Line">
-              <Input placeholder="e.g. Official Invitation: TecMotiv Festival Gala" />
+              <Input placeholder="e.g. Official Invitation: Tecmotiv Festival Gala" />
             </Form.Item>
           </Col>
           <Col span={12}>

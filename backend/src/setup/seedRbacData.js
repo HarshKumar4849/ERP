@@ -126,7 +126,7 @@ async function seedRbacData() {
     // 4. SEED PROJECTS
     const projData = [
       {
-        name: 'TecMotiv ERP Core Migration',
+        name: 'Tecmotiv ERP Core Migration',
         code: 'TM-ERP-01',
         description: 'Migration to modern role-based ERP & HR architecture',
         department: 'Engineering',
@@ -381,7 +381,7 @@ async function seedRbacData() {
       experience: '15 Years',
       linkedin: 'https://linkedin.com/in/david-head-tech',
       areasOfExpertise: ['System Architecture', 'High Scale Engineering'],
-      assignedProjects: [projects['TecMotiv ERP Core Migration']?._id],
+      assignedProjects: [projects['Tecmotiv ERP Core Migration']?._id],
       currentResponsibilities: 'Leading engineering delivery, system architecture, and tech roadmap.',
       user: deptHeadUser._id,
     }).save();
@@ -417,7 +417,7 @@ async function seedRbacData() {
       linkedin: 'https://linkedin.com/in/john-doe-dev',
       areasOfExpertise: ['Full Stack Development', 'RESTful API Design'],
       assignedProjects: [
-        projects['TecMotiv ERP Core Migration']?._id,
+        projects['Tecmotiv ERP Core Migration']?._id,
         projects['Cloud Infrastructure Modernization']?._id,
       ],
       currentResponsibilities: 'Core backend development, API integration, and frontend components.',
@@ -692,7 +692,7 @@ async function seedRbacData() {
       documentType: 'NDA',
       file: {
         fileName: 'sample-nda-1001.pdf',
-        originalName: 'TecMotiv_Standard_NDA_Signed.pdf',
+        originalName: 'Tecmotiv_Standard_NDA_Signed.pdf',
         path: 'src/storage/vault/sample-nda-1001.pdf',
         mimeType: 'application/pdf',
         size: 180000,
@@ -860,7 +860,7 @@ async function seedRbacData() {
     }
     console.log(`👍 Seeded ${attendanceRecordsToSeed.length} attendance records across employees`);
 
-    console.log('🎉 TecMotiv ERP Employee Master & RBAC test data seeding completed successfully!');
+    console.log('🎉 Tecmotiv ERP Employee Master & RBAC test data seeding completed successfully!');
     process.exit(0);
   } catch (err) {
     console.error('Error seeding data:', err);

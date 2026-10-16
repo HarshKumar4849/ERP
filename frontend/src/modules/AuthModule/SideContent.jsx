@@ -22,12 +22,12 @@ export default function SideContent() {
       <div style={{ width: '100%' }}>
         <img
           src={logo}
-          alt="TecMotiv Solutions"
+          alt="Tecmotiv Solutions"
           style={{ margin: '0 0 32px', display: 'block', maxWidth: '240px', height: 'auto' }}
         />
 
         <Title level={1} style={{ fontSize: 28, color: '#002244' }}>
-          TecMotiv Solutions
+          Tecmotiv Solutions
         </Title>
         <Text style={{ fontSize: 15, color: '#595959' }}>
           Enterprise ERP, HR & Operations Management System

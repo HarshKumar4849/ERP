@@ -155,7 +155,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
   }
   res.status(200).json({
     status: 'healthy',
-    service: 'TecMotiv-ERP-API',
+    service: 'Tecmotiv-ERP-API',
     database: dbStatus,
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),

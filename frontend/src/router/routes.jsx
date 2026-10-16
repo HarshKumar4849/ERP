@@ -9,7 +9,7 @@ const About = lazy(() => import('@/pages/About'));
 const Settings = lazy(() => import('@/pages/Settings/Settings'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 
-// TecMotiv ERP Modules
+// Tecmotiv ERP Modules
 const Employees = lazy(() => import('@/pages/Employees'));
 const Attendance = lazy(() => import('@/pages/Attendance'));
 const Leave = lazy(() => import('@/pages/Leave'));

@@ -95,7 +95,7 @@ test.before(async () => {
 
   // Create authorized project with PM and Employee
   testProject = await Project.create({
-    name: 'TecMotiv Concurrency & Stress Hub',
+    name: 'Tecmotiv Concurrency & Stress Hub',
     category: 'MDS',
     department: 'Engineering',
     projectManager: createdFixtures.employee.employee._id,
@@ -121,7 +121,7 @@ test.before(async () => {
 
   // Create separate private project where employeeB is NOT a member
   unauthorizedProject = await Project.create({
-    name: 'TecMotiv Admin Vault Only',
+    name: 'Tecmotiv Admin Vault Only',
     category: 'MDS',
     department: 'Engineering',
     projectManager: createdFixtures.employee.employee._id,
@@ -235,7 +235,7 @@ test('2. High-concurrency manual artifact linking to a Task prevents duplicate l
       sha: commitSha,
       shortSha: 'deadbee',
       message: 'perf: optimize critical path latency',
-      author: 'TecMotiv Lead',
+      author: 'Tecmotiv Lead',
       url: `https://github.com/${testProject.github.fullName}/commit/${commitSha}`,
     })
   );

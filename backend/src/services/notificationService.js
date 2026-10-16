@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 /**
  * PHASE 19 — CENTRALIZED NOTIFICATION SERVICE
  * 
- * Central dispatch for all notification events across TecMotiv ERP.
+ * Central dispatch for all notification events across Tecmotiv ERP.
  * Multi-channel architecture prepared for:
  * 1. In-App Notifications (Persisted to database)
  * 2. Email Notifications (Integrated with email pipeline)
@@ -83,7 +83,7 @@ const emailDeliveryAdapter = async ({ toEmail, recipientName, title, message, li
             <p>${message}</p>
             ${link ? `<p><a href="${process.env.PUBLIC_SERVER_FILE || 'http://localhost:3000'}${link}" style="display:inline-block;padding:10px 16px;background:#002244;color:#fff;text-decoration:none;border-radius:4px;">View in ERP</a></p>` : ''}
             <hr style="border:none;border-top:1px solid #eee;margin-top:20px;" />
-            <p style="font-size:12px;color:#888;">This is an automated notification from TecMotiv ERP.</p>
+            <p style="font-size:12px;color:#888;">This is an automated notification from Tecmotiv ERP.</p>
           </div>
         `,
       });
@@ -417,7 +417,7 @@ const notifyAnniversary = async ({ employee, colleagueUserIds, yearsCompleted })
     recipientEmployee: employee._id,
     type: NOTIFICATION_TYPES.ANNIVERSARY,
     title: `🏆 Work Anniversary: ${employee.name} ${employee.surname}`,
-    message: `Congratulations to ${employee.name} ${employee.surname} for celebrating ${yearsCompleted} year(s) with TecMotiv Solutions!`,
+    message: `Congratulations to ${employee.name} ${employee.surname} for celebrating ${yearsCompleted} year(s) with Tecmotiv Solutions!`,
     link: '/calendar',
     data: { employeeId: employee._id, yearsCompleted },
     priority: 'normal',
@@ -474,7 +474,7 @@ const notifyEventReminder = async ({ event, participantUserIds }) => {
     recipient: participantUserIds,
     type: NOTIFICATION_TYPES.EVENT_REMINDER,
     title: `Upcoming Event Reminder: ${event.title || event.eventName}`,
-    message: `Reminder for upcoming event "${event.title || event.eventName}" scheduled for ${new Date(event.startDate).toLocaleDateString()} at ${event.venue || event.location || 'TecMotiv Auditorium'}.`,
+    message: `Reminder for upcoming event "${event.title || event.eventName}" scheduled for ${new Date(event.startDate).toLocaleDateString()} at ${event.venue || event.location || 'Tecmotiv Auditorium'}.`,
     link: '/events',
     data: { eventId: event._id },
     priority: 'normal',
@@ -488,7 +488,7 @@ const notifyRecognitionNomination = async ({ recipientUserId, nomineeName, award
     recipient: recipientUserId,
     type: NOTIFICATION_TYPES.RECOGNITION_NOMINATION,
     title: `🌟 Star Recognition Award: ${awardName}`,
-    message: `Congratulations! You have received recognition: "${awardName}". Keep up the exceptional work at TecMotiv!`,
+    message: `Congratulations! You have received recognition: "${awardName}". Keep up the exceptional work at Tecmotiv!`,
     link: '/recognition',
     priority: 'normal',
     eventId: `recognition_${recipientUserId}_${Date.now()}`,

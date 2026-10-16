@@ -81,7 +81,7 @@ const setup = async (req, res) => {
   return res.status(200).json({
     success: true,
     result: {},
-    message: 'Successfully TecMotiv App Setup',
+    message: 'Successfully Tecmotiv App Setup',
   });
 };
 

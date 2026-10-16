@@ -19,7 +19,7 @@ export default function ModulePlaceholder({
       <div style={{ marginBottom: 20 }}>
         <Breadcrumb
           items={[
-            { title: 'TecMotiv ERP' },
+            { title: 'Tecmotiv ERP' },
             { title: category },
             { title: title },
           ]}

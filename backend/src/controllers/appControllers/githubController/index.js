@@ -521,7 +521,7 @@ const handleWebhook = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: 'GitHub ping received successfully.',
-        zen: req.body?.zen || 'TecMotiv ERP integration ready.',
+        zen: req.body?.zen || 'Tecmotiv ERP integration ready.',
       });
     }
 

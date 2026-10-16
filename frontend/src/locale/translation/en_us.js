@@ -449,7 +449,7 @@ const lang = {
   enter_code: 'Enter Code',
   offers: 'Offers',
   search: 'search',
-  // TecMotiv ERP Navigation & Modules
+  // Tecmotiv ERP Navigation & Modules
   Dashboard: 'Dashboard',
   Employees: 'Employees',
   Attendance: 'Attendance',

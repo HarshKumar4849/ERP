@@ -446,7 +446,7 @@ export default function PolicyLibrary({ userRole, currentAdmin }) {
                       Mandatory Employee Acknowledgment Required
                     </Text>
                     <Paragraph style={{ fontSize: 12, color: '#595959', margin: '4px 0 12px' }}>
-                      As part of TecMotiv compliance governance, all employees must review and digitally sign off on this document.
+                      As part of Tecmotiv compliance governance, all employees must review and digitally sign off on this document.
                     </Paragraph>
 
                     <div style={{ marginBottom: 14 }}>

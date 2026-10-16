@@ -319,7 +319,7 @@ export default function GoogleCalendarSyncModal({ visible, onClose, onSuccess })
           {/* Security Compliance Banner */}
           <Alert
             message="Google OAuth 2.0 Security & Privacy Compliance"
-            description="TecMotiv strictly never stores Google account passwords. Authorization is handled safely via OAuth 2.0 access & refresh tokens issued by the Google Identity Platform."
+            description="Tecmotiv strictly never stores Google account passwords. Authorization is handled safely via OAuth 2.0 access & refresh tokens issued by the Google Identity Platform."
             type="info"
             showIcon
             icon={<SafetyCertificateOutlined style={{ color: '#4285F4' }} />}
@@ -352,19 +352,19 @@ export default function GoogleCalendarSyncModal({ visible, onClose, onSuccess })
                             <Radio value="two-way">
                               <strong>Two-Way Synchronization</strong>
                               <div style={{ fontSize: 12, color: '#888' }}>
-                                Sync events in both directions (TecMotiv ERP ⟷ Google Calendar).
+                                Sync events in both directions (Tecmotiv ERP ⟷ Google Calendar).
                               </div>
                             </Radio>
                             <Radio value="push-only">
-                              <strong>Push Only (TecMotiv ⟶ Google Calendar)</strong>
+                              <strong>Push Only (Tecmotiv ⟶ Google Calendar)</strong>
                               <div style={{ fontSize: 12, color: '#888' }}>
                                 Export internal company events, holidays & milestones to Google.
                               </div>
                             </Radio>
                             <Radio value="pull-only">
-                              <strong>Pull Only (Google Calendar ⟶ TecMotiv)</strong>
+                              <strong>Pull Only (Google Calendar ⟶ Tecmotiv)</strong>
                               <div style={{ fontSize: 12, color: '#888' }}>
-                                Import Google Calendar meetings into the TecMotiv calendar.
+                                Import Google Calendar meetings into the Tecmotiv calendar.
                               </div>
                             </Radio>
                           </Radio.Group>
@@ -589,7 +589,7 @@ export default function GoogleCalendarSyncModal({ visible, onClose, onSuccess })
       >
         <Form form={createForm} layout="vertical" onFinish={handleCreateGoogleEvent}>
           <Form.Item name="title" label="Meeting / Event Title" rules={[{ required: true }]}>
-            <Input placeholder="e.g. TecMotiv Client Review" />
+            <Input placeholder="e.g. Tecmotiv Client Review" />
           </Form.Item>
           <Form.Item name="description" label="Agenda / Description">
             <Input.TextArea rows={3} placeholder="Meeting agenda and topics..." />

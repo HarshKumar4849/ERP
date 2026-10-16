@@ -64,7 +64,7 @@ export default function TemplatePreviewModal({ visible, onClose, template }) {
         managerName: 'Aditya Varma (VP Engineering)',
         eventName: 'Annual Innovation Showcase 2026',
         eventDate: dayjs().add(14, 'day').format('MMMM D, YYYY'),
-        venue: 'TecMotiv Corporate Auditorium',
+        venue: 'Tecmotiv Corporate Auditorium',
         yearsCompleted: '3',
         festivalName: 'Diwali',
         awardTitle: 'Excellence in Enterprise Architecture',
@@ -112,7 +112,7 @@ export default function TemplatePreviewModal({ visible, onClose, template }) {
     printWindow.document.write(`
       <html>
         <head>
-          <title>${template?.title || 'TecMotiv Document'}</title>
+          <title>${template?.title || 'Tecmotiv Document'}</title>
           <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1f2937; line-height: 1.6; }
             .header { border-bottom: 2px solid #002244; padding-bottom: 12px; margin-bottom: 24px; }
@@ -125,7 +125,7 @@ export default function TemplatePreviewModal({ visible, onClose, template }) {
         <body>
           <div class="header">
             <div class="company">TECMOTIV SOLUTIONS PVT. LTD.</div>
-            <div class="address">TecMotiv Tower, Outer Ring Road, Bengaluru, Karnataka, 560103</div>
+            <div class="address">Tecmotiv Tower, Outer Ring Road, Bengaluru, Karnataka, 560103</div>
           </div>
           ${previewResult.renderedSubject ? `<div class="subject">Sub: ${previewResult.renderedSubject}</div>` : ''}
           <div class="content">${previewResult.renderedContent}</div>
@@ -330,7 +330,7 @@ export default function TemplatePreviewModal({ visible, onClose, template }) {
                   TECMOTIV SOLUTIONS PVT. LTD.
                 </div>
                 <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                  TecMotiv Tower, Tech Enclave, Outer Ring Road, Bengaluru, 560103
+                  Tecmotiv Tower, Tech Enclave, Outer Ring Road, Bengaluru, 560103
                 </div>
               </div>
               <Tag color="#002244" style={{ fontWeight: 600 }}>OFFICIAL DOCUMENT</Tag>

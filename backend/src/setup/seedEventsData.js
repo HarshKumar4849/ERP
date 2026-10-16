@@ -16,16 +16,16 @@ async function seedEventsData() {
     const empIds = employees.map(e => e._id);
     console.log(`Found ${employees.length} employees for seed participants.`);
 
-    // Remove previously seeded TecMotiv demo events
-    await Event.deleteMany({ title: { $regex: /^\[TecMotiv\]/ } });
+    // Remove previously seeded Tecmotiv demo events
+    await Event.deleteMany({ title: { $regex: /^\[Tecmotiv\]/ } });
 
     const now = new Date();
     const currentYear = now.getFullYear();
 
     const sampleEvents = [
       {
-        title: '[TecMotiv] Diwali Cultural Gala & Grand Feast 2026',
-        eventName: '[TecMotiv] Diwali Cultural Gala & Grand Feast 2026',
+        title: '[Tecmotiv] Diwali Cultural Gala & Grand Feast 2026',
+        eventName: '[Tecmotiv] Diwali Cultural Gala & Grand Feast 2026',
         eventType: 'Festival',
         description: 'Annual Festival of Lights celebration featuring traditional dance, gourmet catering, gift hampers, and employee talent showcase.',
         startDate: new Date(currentYear, 10, 12, 17, 30),
@@ -37,10 +37,10 @@ async function seedEventsData() {
         department: 'All',
         isVirtual: false,
         poster: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
-        organizerName: 'TecMotiv People & Engagement Council',
+        organizerName: 'Tecmotiv People & Engagement Council',
         participants: empIds.slice(0, 15).map(id => ({ employee: id, status: 'Accepted' })),
         invitation: {
-          subject: 'You are Invited: TecMotiv Grand Diwali Gala 2026',
+          subject: 'You are Invited: Tecmotiv Grand Diwali Gala 2026',
           message: 'Join us with your families for an evening of light, music, and festive celebration.',
           sent: true,
           sentAt: new Date(),
@@ -50,8 +50,8 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Q4 All-Hands Town Hall & Corporate Milestones',
-        eventName: '[TecMotiv] Q4 All-Hands Town Hall & Corporate Milestones',
+        title: '[Tecmotiv] Q4 All-Hands Town Hall & Corporate Milestones',
+        eventName: '[Tecmotiv] Q4 All-Hands Town Hall & Corporate Milestones',
         eventType: 'Company Event',
         description: 'Quarterly executive review by leadership, product roadmaps presentation, and major client expansion announcements.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 5, 10, 0),
@@ -59,7 +59,7 @@ async function seedEventsData() {
         time: '10:00 AM',
         startTime: '10:00 AM',
         endTime: '12:30 PM',
-        venue: 'TecMotiv Corporate Auditorium, 5th Floor & Live Stream',
+        venue: 'Tecmotiv Corporate Auditorium, 5th Floor & Live Stream',
         department: 'All',
         isVirtual: true,
         meetingLink: 'https://meet.google.com/tec-motiv-townhall',
@@ -67,7 +67,7 @@ async function seedEventsData() {
         organizerName: 'Executive Operations Office',
         participants: empIds.map(id => ({ employee: id, status: 'Invited' })),
         invitation: {
-          subject: 'Town Hall Meeting: TecMotiv Vision & Q4 Strategy',
+          subject: 'Town Hall Meeting: Tecmotiv Vision & Q4 Strategy',
           message: 'All employees are required to participate. Interactive Q&A session will follow.',
           sent: true,
           sentAt: new Date(),
@@ -77,8 +77,8 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Annual Star Excellence & Recognition Awards',
-        eventName: '[TecMotiv] Annual Star Excellence & Recognition Awards',
+        title: '[Tecmotiv] Annual Star Excellence & Recognition Awards',
+        eventName: '[Tecmotiv] Annual Star Excellence & Recognition Awards',
         eventType: 'Recognition',
         description: 'Honoring top innovators, project leaders, outstanding mentors, and rising talent across all business units.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 14, 18, 0),
@@ -94,7 +94,7 @@ async function seedEventsData() {
         participants: empIds.slice(0, 12).map(id => ({ employee: id, status: 'Accepted' })),
         invitation: {
           subject: 'Invitation: Annual Star Excellence Awards Ceremony',
-          message: 'Celebrate peer achievements and celebrate the innovators shaping TecMotiv.',
+          message: 'Celebrate peer achievements and celebrate the innovators shaping Tecmotiv.',
           sent: true,
           sentAt: new Date(),
           sentBy: 'People Operations',
@@ -103,8 +103,8 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Next-Gen AI & Cloud Architecture Masterclass',
-        eventName: '[TecMotiv] Next-Gen AI & Cloud Architecture Masterclass',
+        title: '[Tecmotiv] Next-Gen AI & Cloud Architecture Masterclass',
+        eventName: '[Tecmotiv] Next-Gen AI & Cloud Architecture Masterclass',
         eventType: 'Training',
         description: 'Hands-on architectural bootcamp on building resilient microservices and deploying LLM pipelines in enterprise setups.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 8, 14, 0),
@@ -117,7 +117,7 @@ async function seedEventsData() {
         isVirtual: true,
         meetingLink: 'https://meet.google.com/tec-ai-masterclass',
         poster: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80',
-        organizerName: 'TecMotiv Engineering Academy',
+        organizerName: 'Tecmotiv Engineering Academy',
         participants: empIds.slice(0, 8).map(id => ({ employee: id, status: 'Accepted' })),
         invitation: {
           subject: 'Technical Upskilling: AI & Microservices Masterclass',
@@ -130,8 +130,8 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Community Green Drive & Tree Plantation 2026',
-        eventName: '[TecMotiv] Community Green Drive & Tree Plantation 2026',
+        title: '[Tecmotiv] Community Green Drive & Tree Plantation 2026',
+        eventName: '[Tecmotiv] Community Green Drive & Tree Plantation 2026',
         eventType: 'CSR Activity',
         description: 'Volunteering initiative planting 500 saplings in urban green belts in collaboration with Bangalore Eco Trust.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 20, 8, 0),
@@ -143,10 +143,10 @@ async function seedEventsData() {
         department: 'All',
         isVirtual: false,
         poster: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=80',
-        organizerName: 'TecMotiv CSR & Sustainability Foundation',
+        organizerName: 'Tecmotiv CSR & Sustainability Foundation',
         participants: empIds.slice(0, 10).map(id => ({ employee: id, status: 'Accepted' })),
         invitation: {
-          subject: 'Join Us: TecMotiv Tree Plantation CSR Initiative',
+          subject: 'Join Us: Tecmotiv Tree Plantation CSR Initiative',
           message: 'Make a lasting environmental impact. Transport and refreshments provided.',
           sent: true,
           sentAt: new Date(),
@@ -156,8 +156,8 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Enterprise SaaS Digital Transformation Summit',
-        eventName: '[TecMotiv] Enterprise SaaS Digital Transformation Summit',
+        title: '[Tecmotiv] Enterprise SaaS Digital Transformation Summit',
+        eventName: '[Tecmotiv] Enterprise SaaS Digital Transformation Summit',
         eventType: 'Webinar',
         description: 'Industry thought leadership webinar discussing the future of AI-driven enterprise management and client automation.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 25, 15, 0),
@@ -170,7 +170,7 @@ async function seedEventsData() {
         isVirtual: true,
         meetingLink: 'https://webinar.tecmotiv.com/saas-summit-2026',
         poster: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&w=1200&q=80',
-        organizerName: 'TecMotiv Marketing & Brand Growth',
+        organizerName: 'Tecmotiv Marketing & Brand Growth',
         participants: empIds.slice(0, 10).map(id => ({ employee: id, status: 'Invited' })),
         invitation: {
           subject: 'Exclusive Webinar: Enterprise SaaS Digital Transformation',
@@ -183,10 +183,10 @@ async function seedEventsData() {
         status: 'Scheduled',
       },
       {
-        title: '[TecMotiv] Strategic Enterprise Client Showcase & Networking',
-        eventName: '[TecMotiv] Strategic Enterprise Client Showcase & Networking',
+        title: '[Tecmotiv] Strategic Enterprise Client Showcase & Networking',
+        eventName: '[Tecmotiv] Strategic Enterprise Client Showcase & Networking',
         eventType: 'Client Event',
-        description: 'Executive cocktail and demo lounge showcasing TecMotiv solutions for our Tier-1 enterprise partners.',
+        description: 'Executive cocktail and demo lounge showcasing Tecmotiv solutions for our Tier-1 enterprise partners.',
         startDate: new Date(currentYear, now.getMonth(), now.getDate() + 30, 17, 0),
         endDate: new Date(currentYear, now.getMonth(), now.getDate() + 30, 20, 0),
         time: '05:00 PM',
@@ -199,7 +199,7 @@ async function seedEventsData() {
         organizerName: 'Enterprise Client Success Unit',
         participants: empIds.slice(0, 6).map(id => ({ employee: id, status: 'Accepted' })),
         invitation: {
-          subject: 'Client VIP Evening: TecMotiv Future Frontiers',
+          subject: 'Client VIP Evening: Tecmotiv Future Frontiers',
           message: 'An intimate networking session with key clients and leadership.',
           sent: true,
           sentAt: new Date(),
@@ -210,8 +210,8 @@ async function seedEventsData() {
       },
       // Completed Past Events with rich reports and photo/video archives
       {
-        title: '[TecMotiv] Founder Day & Corporate 5-Year Milestone Celebration',
-        eventName: '[TecMotiv] Founder Day & Corporate 5-Year Milestone Celebration',
+        title: '[Tecmotiv] Founder Day & Corporate 5-Year Milestone Celebration',
+        eventName: '[Tecmotiv] Founder Day & Corporate 5-Year Milestone Celebration',
         eventType: 'Anniversary',
         description: 'Reflecting on 5 years of remarkable growth, engineering breakthroughs, and honoring early team members.',
         startDate: new Date(currentYear, now.getMonth() - 1, 15, 16, 0),
@@ -219,14 +219,14 @@ async function seedEventsData() {
         time: '04:00 PM',
         startTime: '04:00 PM',
         endTime: '09:00 PM',
-        venue: 'TecMotiv Central Amphitheatre',
+        venue: 'Tecmotiv Central Amphitheatre',
         department: 'All',
         isVirtual: false,
         poster: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
         organizerName: 'Executive Leadership Committee',
         participants: empIds.map(id => ({ employee: id, status: 'Attended' })),
         invitation: {
-          subject: 'Celebrating 5 Golden Years of TecMotiv',
+          subject: 'Celebrating 5 Golden Years of Tecmotiv',
           message: 'A memorable milestone journey commemorated with all employees.',
           sent: true,
           sentAt: new Date(currentYear, now.getMonth() - 1, 5),
@@ -242,7 +242,7 @@ async function seedEventsData() {
           { url: 'https://www.youtube.com/watch?v=tecmotiv5years', title: '5-Year Journey Video Highlights', platform: 'YouTube' },
         ],
         eventReport: {
-          summary: 'A resounding success celebrating TecMotiv 5-Year anniversary with over 150 team members and alumni.',
+          summary: 'A resounding success celebrating Tecmotiv 5-Year anniversary with over 150 team members and alumni.',
           attendanceCount: 152,
           highlights: 'Founder address, distribution of 5-year loyalty equity tokens, musical performance by employees.',
           outcomes: 'Strengthened organizational unity and reinforced 2026 expansion goals.',
@@ -252,8 +252,8 @@ async function seedEventsData() {
         status: 'Completed',
       },
       {
-        title: '[TecMotiv] Mega Monthly Birthday Bash — Team Celebration',
-        eventName: '[TecMotiv] Mega Monthly Birthday Bash — Team Celebration',
+        title: '[Tecmotiv] Mega Monthly Birthday Bash — Team Celebration',
+        eventName: '[Tecmotiv] Mega Monthly Birthday Bash — Team Celebration',
         eventType: 'Birthday',
         description: 'Celebrating all colleagues born this month with customized cakes, team games, and fun awards.',
         startDate: new Date(currentYear, now.getMonth() - 1, 28, 16, 30),
@@ -261,7 +261,7 @@ async function seedEventsData() {
         time: '04:30 PM',
         startTime: '04:30 PM',
         endTime: '06:00 PM',
-        venue: 'TecMotiv Cafeteria & Lounge Hub',
+        venue: 'Tecmotiv Cafeteria & Lounge Hub',
         department: 'All',
         isVirtual: false,
         poster: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1200&q=80',

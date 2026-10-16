@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
  * 
  * Capabilities:
  * 1. OAuth 2.0 Authorization & Token Refresh for Google Calendar API.
- * 2. Two-Way Event Synchronization between TecMotiv ERP and Google Calendar.
+ * 2. Two-Way Event Synchronization between Tecmotiv ERP and Google Calendar.
  * 3. Automatic Google Meet video conference link generation.
  * 4. Deduplication engine to prevent duplicate calendar events.
  * 5. TECMOTIV Calendar configured as master Source of Truth with conflict resolution.
@@ -25,7 +25,7 @@ const DEFAULT_SCOPES = [
 const sandboxCalendar = {
   events: new Map(),
   userProfile: {
-    displayName: 'Harsh Kumar (TecMotiv)',
+    displayName: 'Harsh Kumar (Tecmotiv)',
     email: process.env.EMAIL_USER || 'hkp12345h@gmail.com',
     id: 'google-user-tecmotiv-001',
   },
@@ -70,7 +70,7 @@ const exchangeCodeForTokens = async ({ code, clientId, clientSecret, redirectUri
       tokenScope: DEFAULT_SCOPES,
       isSandbox: true,
       email: process.env.EMAIL_USER || 'hkp12345h@gmail.com',
-      displayName: 'Harsh Kumar (TecMotiv)',
+      displayName: 'Harsh Kumar (Tecmotiv)',
     };
   }
 
@@ -106,7 +106,7 @@ const exchangeCodeForTokens = async ({ code, clientId, clientSecret, redirectUri
     tokenExpiresAt,
     tokenScope: data.scope,
     email: profile.email || process.env.EMAIL_USER || 'hkp12345h@gmail.com',
-    displayName: profile.name || 'TecMotiv Google Account',
+    displayName: profile.name || 'Tecmotiv Google Account',
     isSandbox: false,
   };
 };
@@ -186,7 +186,7 @@ const createCalendarEvent = async ({ accessToken, eventData, isSandbox }) => {
       description: description || '',
       start: { dateTime: startISO },
       end: { dateTime: endISO },
-      location: isVirtual ? meetUrl : 'TecMotiv Conference Room',
+      location: isVirtual ? meetUrl : 'Tecmotiv Conference Room',
       hangoutLink: isVirtual ? meetUrl : null,
       status: 'confirmed',
     };
@@ -256,7 +256,7 @@ const syncCalendarEvents = async ({ integrationDoc, syncDirection = 'two-way', s
     const googleEventMap = new Map();
     googleEvents.forEach((g) => googleEventMap.set(g.summary?.trim().toLowerCase(), g));
 
-    // C. PUSH (TecMotiv -> Google Calendar)
+    // C. PUSH (Tecmotiv -> Google Calendar)
     if (syncDirection === 'two-way' || syncDirection === 'push-only') {
       for (const ev of erpEvents) {
         const key = (ev.title || ev.eventName || '').trim().toLowerCase();
@@ -293,7 +293,7 @@ const syncCalendarEvents = async ({ integrationDoc, syncDirection = 'two-way', s
       }
     }
 
-    // D. PULL (Google Calendar -> TecMotiv ERP)
+    // D. PULL (Google Calendar -> Tecmotiv ERP)
     if (syncDirection === 'two-way' || syncDirection === 'pull-only') {
       const erpTitleMap = new Set(erpEvents.map((e) => (e.title || e.eventName || '').trim().toLowerCase()));
 
@@ -324,7 +324,7 @@ const syncCalendarEvents = async ({ integrationDoc, syncDirection = 'two-way', s
           timestamp: new Date(),
           action: 'PULL',
           title: ge.summary,
-          details: `Imported event from Google Calendar into TecMotiv ERP.`,
+          details: `Imported event from Google Calendar into Tecmotiv ERP.`,
           status: 'success',
         });
       }

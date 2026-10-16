@@ -115,12 +115,12 @@ const create = async (req, res) => {
       time: time || startTime || '10:00 AM',
       startTime: startTime || time || '10:00 AM',
       endTime: endTime || '12:00 PM',
-      venue: venue || location || 'TecMotiv Corporate Auditorium',
-      location: location || venue || 'TecMotiv Corporate Auditorium',
+      venue: venue || location || 'Tecmotiv Corporate Auditorium',
+      location: location || venue || 'Tecmotiv Corporate Auditorium',
       department: department || 'All',
       project: project || undefined,
       organizer: user?._id,
-      organizerName: organizerName || `${user?.name || ''} ${user?.surname || ''}`.trim() || 'TecMotiv Events Team',
+      organizerName: organizerName || `${user?.name || ''} ${user?.surname || ''}`.trim() || 'Tecmotiv Events Team',
       participants: normalizedParticipants,
       attendees: attendeeIds,
       isVirtual: Boolean(isVirtual),
@@ -438,7 +438,7 @@ const sendInvitation = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Event not found.' });
     }
 
-    const senderName = `${user?.name || ''} ${user?.surname || ''}`.trim() || user?.email || 'TecMotiv Operations';
+    const senderName = `${user?.name || ''} ${user?.surname || ''}`.trim() || user?.email || 'Tecmotiv Operations';
     const recipientCount = event.participants?.length || event.attendees?.length || 0;
 
     event.invitation = {
@@ -526,7 +526,7 @@ const submitReport = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Event not found.' });
     }
 
-    const reporterName = `${user?.name || ''} ${user?.surname || ''}`.trim() || user?.email || 'TecMotiv HR';
+    const reporterName = `${user?.name || ''} ${user?.surname || ''}`.trim() || user?.email || 'Tecmotiv HR';
 
     event.eventReport = {
       summary: summary || '',

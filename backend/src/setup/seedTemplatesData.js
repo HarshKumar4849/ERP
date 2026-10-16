@@ -22,7 +22,7 @@ async function seedTemplatesData() {
         category: 'HR Templates',
         type: 'Joining Letter',
         description: 'Formal onboarding letter issued to new hires on Day 1.',
-        subject: 'Welcome to TecMotiv — Official Joining Letter for {{employeeName}}',
+        subject: 'Welcome to Tecmotiv — Official Joining Letter for {{employeeName}}',
         content: `Date: {{currentDate}}
 
 To,
@@ -32,7 +32,7 @@ Department: {{department}}
 
 Dear {{employeeName}},
 
-We are delighted to formally welcome you to TecMotiv Solutions Pvt. Ltd. This letter confirms your joining as {{designation}} in the {{department}} department, effective {{joiningDate}}.
+We are delighted to formally welcome you to Tecmotiv Solutions Pvt. Ltd. This letter confirms your joining as {{designation}} in the {{department}} department, effective {{joiningDate}}.
 
 Reporting Details:
 - Designation: {{designation}}
@@ -42,11 +42,11 @@ Reporting Details:
 
 Please submit all required compliance credentials and signed policy acknowledgements to the Human Resources department within 48 hours of joining.
 
-We wish you a long, rewarding, and impactful career with TecMotiv!
+We wish you a long, rewarding, and impactful career with Tecmotiv!
 
 Sincerely,
 Head of Human Resources
-TecMotiv Solutions Pvt. Ltd.`,
+Tecmotiv Solutions Pvt. Ltd.`,
         isDefault: true,
       },
       {
@@ -61,7 +61,7 @@ Dear {{employeeName}},
 
 Sub: Letter of Appointment
 
-With reference to your interview and discussions with us, TecMotiv Solutions Pvt. Ltd. is pleased to appoint you as {{designation}} in the {{department}} department effective {{joiningDate}}.
+With reference to your interview and discussions with us, Tecmotiv Solutions Pvt. Ltd. is pleased to appoint you as {{designation}} in the {{department}} department effective {{joiningDate}}.
 
 Key Terms of Employment:
 1. Compensation: Your gross annual compensation package is {{salary}}, subject to statutory deductions.
@@ -70,7 +70,7 @@ Key Terms of Employment:
 
 Please sign and return the duplicate copy of this letter as an endorsement of your acceptance.
 
-For TecMotiv Solutions Pvt. Ltd.,
+For Tecmotiv Solutions Pvt. Ltd.,
 Authorized Signatory — Director of People Operations`,
         isDefault: true,
       },
@@ -83,7 +83,7 @@ Authorized Signatory — Director of People Operations`,
         content: `NON-DISCLOSURE AND PROPRIETARY INFORMATION AGREEMENT
 
 This Agreement is entered into on {{currentDate}}, by and between:
-TecMotiv Solutions Pvt. Ltd., located at {{companyAddress}} (hereinafter "Company"),
+Tecmotiv Solutions Pvt. Ltd., located at {{companyAddress}} (hereinafter "Company"),
 AND
 {{employeeName}}, Employee ID: {{employeeId}}, residing as employee of {{department}} (hereinafter "Employee").
 
@@ -110,7 +110,7 @@ Date: {{currentDate}}`,
 
 Dear {{employeeName}},
 
-TecMotiv Solutions Pvt. Ltd. is pleased to offer you an Internship as {{designation}} in our {{department}} team starting {{joiningDate}}.
+Tecmotiv Solutions Pvt. Ltd. is pleased to offer you an Internship as {{designation}} in our {{department}} team starting {{joiningDate}}.
 
 Internship Highlights:
 - Stipend: {{salary}}
@@ -119,7 +119,7 @@ Internship Highlights:
 
 Upon successful completion of the internship, outstanding performance will be considered for a Pre-Placement Offer (PPO) as full-time software engineer.
 
-Welcome aboard to the TecMotiv Innovation Lab!
+Welcome aboard to the Tecmotiv Innovation Lab!
 
 Sincerely,
 University Relations & Talent Team`,
@@ -135,7 +135,7 @@ University Relations & Talent Team`,
 
 Date: {{currentDate}}
 
-This is to certify that {{employeeName}} (Employee ID: {{employeeId}}) was employed with TecMotiv Solutions Pvt. Ltd. from {{joiningDate}} to {{effectiveDate}}.
+This is to certify that {{employeeName}} (Employee ID: {{employeeId}}) was employed with Tecmotiv Solutions Pvt. Ltd. from {{joiningDate}} to {{effectiveDate}}.
 
 During their tenure with us, {{employeeName}} held the designation of {{designation}} in the {{department}} department.
 
@@ -143,7 +143,7 @@ Their responsibilities included core development, agile execution, and team ment
 
 We wish {{employeeName}} all the best in their future professional endeavors.
 
-For TecMotiv Solutions Pvt. Ltd.,
+For Tecmotiv Solutions Pvt. Ltd.,
 Head of Talent Operations`,
         isDefault: true,
       },
@@ -165,7 +165,7 @@ Dear {{employeeName}},
 
 Sub: Relieving Letter
 
-With reference to your resignation letter, we confirm that you have been relieved of your duties from TecMotiv Solutions Pvt. Ltd. at the close of business on {{effectiveDate}}.
+With reference to your resignation letter, we confirm that you have been relieved of your duties from Tecmotiv Solutions Pvt. Ltd. at the close of business on {{effectiveDate}}.
 
 All company hardware, access tokens, and administrative assets have been satisfactorily surrendered. Your full and final settlement (FnF) has been processed in accordance with company policy.
 
@@ -173,7 +173,7 @@ We thank you for your contributions during your tenure since {{joiningDate}} and
 
 Yours sincerely,
 Director of Human Resources
-TecMotiv Solutions Pvt. Ltd.`,
+Tecmotiv Solutions Pvt. Ltd.`,
         isDefault: true,
       },
       {
@@ -221,7 +221,7 @@ Please ensure that your tasks and deliverables are delegated or scheduled ahead 
 Enjoy your time off!
 
 Human Resources & Leave Desk
-TecMotiv Solutions Pvt. Ltd.`,
+Tecmotiv Solutions Pvt. Ltd.`,
         isDefault: true,
       },
       {
@@ -240,9 +240,9 @@ Department: {{department}}
 
 Dear {{employeeName}},
 
-This communication serves as a formal notice regarding adherence to TecMotiv company standards and expected professional obligations effective {{effectiveDate}}.
+This communication serves as a formal notice regarding adherence to Tecmotiv company standards and expected professional obligations effective {{effectiveDate}}.
 
-We request you to schedule an alignment review with your department head {{managerName}} within 3 business days. TecMotiv remains committed to supporting your professional development, provided necessary corrective steps are promptly enacted.
+We request you to schedule an alignment review with your department head {{managerName}} within 3 business days. Tecmotiv remains committed to supporting your professional development, provided necessary corrective steps are promptly enacted.
 
 Regards,
 Human Resources Grievance & Compliance Cell`,
@@ -284,17 +284,17 @@ Human Resources Performance & Rewards Team`,
         category: 'Communication',
         type: 'Birthday Wishes',
         description: 'Celebratory note for celebrating an employee birthday.',
-        subject: '🎂 Happy Birthday, {{employeeName}}! — TecMotiv Family',
+        subject: '🎂 Happy Birthday, {{employeeName}}! — Tecmotiv Family',
         content: `Dear {{employeeName}},
 
-Wishing you a very Happy Birthday from all of us at TecMotiv Solutions! 🎂🎉
+Wishing you a very Happy Birthday from all of us at Tecmotiv Solutions! 🎂🎉
 
 May your day be filled with joy, laughter, and sweet moments. We are so lucky to have you as part of our {{department}} family, bringing positive energy and excellence every single day.
 
 Have an unforgettable celebration!
 
 Warm wishes,
-The TecMotiv Family`,
+The Tecmotiv Family`,
         isDefault: true,
       },
       {
@@ -302,7 +302,7 @@ The TecMotiv Family`,
         category: 'Communication',
         type: 'Anniversary Wishes',
         description: 'Milestone celebration note for work anniversaries.',
-        subject: '🏆 Celebrating {{yearsCompleted}} Years at TecMotiv — Kudos {{employeeName}}!',
+        subject: '🏆 Celebrating {{yearsCompleted}} Years at Tecmotiv — Kudos {{employeeName}}!',
         content: `Dear {{employeeName}},
 
 Happy {{yearsCompleted}}-Year Work Anniversary! 🏆✨
@@ -312,25 +312,25 @@ Since you joined us on {{joiningDate}}, your hard work, dedication, and ingenuit
 Thank you for your continuous dedication and loyalty. Here is to many more milestones together!
 
 Warmest congratulations,
-Executive Leadership & TecMotiv Colleagues`,
+Executive Leadership & Tecmotiv Colleagues`,
         isDefault: true,
       },
       {
-        title: 'Welcome to TecMotiv Greeting',
+        title: 'Welcome to Tecmotiv Greeting',
         category: 'Communication',
         type: 'Welcome Message',
         description: 'Warm welcome message sent to new joiners on Day 1.',
-        subject: 'A Warm Welcome to TecMotiv, {{employeeName}}!',
+        subject: 'A Warm Welcome to Tecmotiv, {{employeeName}}!',
         content: `Hi {{employeeName}},
 
-Welcome to the TecMotiv family! We are thrilled to have you join our {{department}} team as {{designation}}.
+Welcome to the Tecmotiv family! We are thrilled to have you join our {{department}} team as {{designation}}.
 
 Our team is dedicated to engineering best-in-class enterprise systems and fostering an inclusive, vibrant culture. Your onboarding buddy will connect with you today for a walkthrough.
 
 Don't hesitate to reach out if you have any questions. Let's build the future together!
 
 Cheers,
-TecMotiv People & Culture Team`,
+Tecmotiv People & Culture Team`,
         isDefault: true,
       },
       {
@@ -339,7 +339,7 @@ TecMotiv People & Culture Team`,
         type: 'New Employee Announcement',
         description: 'Broadcast email introducing new team members to the entire company.',
         subject: '👋 Welcoming {{employeeName}} to our {{department}} Team!',
-        content: `Hello Team TecMotiv,
+        content: `Hello Team Tecmotiv,
 
 Please join us in giving a warm welcome to {{employeeName}}, who has joined us as {{designation}} in the {{department}} department!
 
@@ -365,7 +365,7 @@ Their exceptional dedication, customer empathy, and innovation have set a high b
 Please join us in celebrating and congratulating {{employeeName}} on this well-deserved recognition! 🌟👏
 
 Leadership Team
-TecMotiv Solutions Pvt. Ltd.`,
+Tecmotiv Solutions Pvt. Ltd.`,
         isDefault: true,
       },
       {
@@ -388,17 +388,17 @@ Please join us in congratulating {{employeeName}} and wishing them tremendous su
         category: 'Communication',
         type: 'Festival Greeting',
         description: 'Warm holiday and festive greetings for Diwali, New Year, etc.',
-        subject: '🪔 Happy {{festivalName}} from TecMotiv Solutions!',
+        subject: '🪔 Happy {{festivalName}} from Tecmotiv Solutions!',
         content: `Dear {{employeeName}} & Family,
 
-On the auspicious occasion of {{festivalName}}, TecMotiv extends our warmest greetings and best wishes to you and your loved ones!
+On the auspicious occasion of {{festivalName}}, Tecmotiv extends our warmest greetings and best wishes to you and your loved ones!
 
 May this festive season bring boundless happiness, good health, peace, and prosperity to your home.
 
 Enjoy the holiday festivities!
 
 Warm regards,
-Managing Director & TecMotiv Board`,
+Managing Director & Tecmotiv Board`,
         isDefault: true,
       },
       {
@@ -438,7 +438,7 @@ Photo memories and recap videos are now available in the ERP Events Gallery.
 See you at the next celebration!
 
 Warmly,
-TecMotiv Events Committee`,
+Tecmotiv Events Committee`,
         isDefault: true,
       },
 
@@ -459,7 +459,7 @@ At {{companyName}}, our mission is empowering modern businesses with automated, 
 
 👉 Learn more about our journey and open roles: https://tecmotiv.com/careers
 
-#EnterpriseSoftware #CloudEngineering #TecMotiv #TechInnovation #Milestones`,
+#EnterpriseSoftware #CloudEngineering #Tecmotiv #TechInnovation #Milestones`,
         isDefault: true,
       },
       {
@@ -565,7 +565,7 @@ Marketing & Community Team
       console.log(`✓ Seeded template: "${tmpl.title}" [${tmpl.category} / ${tmpl.type}]`);
     }
 
-    console.log(`\n✨ Successfully seeded ${allTemplates.length} default TecMotiv templates across all categories!\n`);
+    console.log(`\n✨ Successfully seeded ${allTemplates.length} default Tecmotiv templates across all categories!\n`);
     process.exit(0);
   } catch (err) {
     console.error('Seed templates error:', err);

@@ -20,7 +20,7 @@ export default function Recognition() {
     >
       <Spin size="large" />
       <span style={{ color: '#595959', fontSize: 14 }}>
-        Redirecting to TecMotiv Shoutout Recognition system...
+        Redirecting to Tecmotiv Shoutout Recognition system...
       </span>
     </div>
   );

@@ -485,7 +485,7 @@ export default function BulletinFeed({ initialSection = 'ALL', userRole, current
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <Spin size="large" />
-            <div style={{ marginTop: 16, color: '#8c8c8c' }}>Loading TecMotiv Bulletin...</div>
+            <div style={{ marginTop: 16, color: '#8c8c8c' }}>Loading Tecmotiv Bulletin...</div>
           </div>
         ) : filteredItems.length === 0 ? (
           <Empty
@@ -623,7 +623,7 @@ export default function BulletinFeed({ initialSection = 'ALL', userRole, current
                             }}
                             ellipsis
                           >
-                            {item.authorName || 'TecMotiv Team'}
+                            {item.authorName || 'Tecmotiv Team'}
                           </Text>
                           <Text
                             type="secondary"

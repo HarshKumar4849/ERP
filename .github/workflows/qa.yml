@@ -1,4 +1,4 @@
-name: TecMotiv QA
+name: Tecmotiv QA
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
       DATABASE: mongodb://127.0.0.1:27017/tecmotiv_qa
       JWT_SECRET: ci-only-qa-secret
       QA_RUN_ID: ci-${{ github.run_id }}
-      QA_FIXTURE_PASSWORD: TecMotiv-QA-Only-2026!
+      QA_FIXTURE_PASSWORD: Tecmotiv-QA-Only-2026!
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       PORT: 8899
       JWT_SECRET: ci-only-qa-secret
       QA_RUN_ID: ci-${{ github.run_id }}
-      QA_FIXTURE_PASSWORD: TecMotiv-QA-Only-2026!
+      QA_FIXTURE_PASSWORD: Tecmotiv-QA-Only-2026!
       NODE_ENV: test
       VITE_BACKEND_SERVER: http://127.0.0.1:8899/
     steps:

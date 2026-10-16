@@ -70,8 +70,8 @@ export default function CelebrationsManager({ userRole, currentAdmin }) {
     setSelectedPerson(person);
     setWishText(
       person.type === 'Birthday'
-        ? `Happy Birthday ${person.name}! Wishing you a wonderful year ahead from all of us at TecMotiv! 🎉🎂`
-        : `Happy ${person.yearsCompleted} Year Work Anniversary ${person.name}! Thank you for your continued dedication and leadership at TecMotiv! 🏆🌟`
+        ? `Happy Birthday ${person.name}! Wishing you a wonderful year ahead from all of us at Tecmotiv! 🎉🎂`
+        : `Happy ${person.yearsCompleted} Year Work Anniversary ${person.name}! Thank you for your continued dedication and leadership at Tecmotiv! 🏆🌟`
     );
     setWishModalVisible(true);
   };

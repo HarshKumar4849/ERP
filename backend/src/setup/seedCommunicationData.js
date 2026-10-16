@@ -169,8 +169,8 @@ async function seedCommunicationData() {
 
       // --- COMPANY GOVERNANCE CATEGORY ---
       {
-        name: 'TecMotiv Global Code of Business Conduct & Ethics',
-        title: 'TecMotiv Global Code of Business Conduct & Ethics',
+        name: 'Tecmotiv Global Code of Business Conduct & Ethics',
+        title: 'Tecmotiv Global Code of Business Conduct & Ethics',
         code: 'POL-CORP-01',
         category: 'COMPANY',
         subType: 'Code of Conduct',
@@ -265,7 +265,7 @@ async function seedCommunicationData() {
     const bulletinItems = [
       // --- COMPANY NEWS ---
       {
-        title: 'Welcome John Doe & Jane Smith to TecMotiv Global Workforce',
+        title: 'Welcome John Doe & Jane Smith to Tecmotiv Global Workforce',
         content: 'We are thrilled to welcome our newest team members across Engineering and Marketing. Please join us in wishing them success as they begin their onboarding journey.',
         section: 'COMPANY NEWS',
         subType: 'New Employee',
@@ -275,8 +275,8 @@ async function seedCommunicationData() {
         authorName: 'Sarah Connor (Head of People)',
       },
       {
-        title: 'TecMotiv Secures Enterprise Deal with Apex Automotive Systems',
-        content: 'TecMotiv has executed a multi-year master services agreement to provide integrated telematics and fleet ERP management for Apex Automotive’s 25,000-vehicle fleet.',
+        title: 'Tecmotiv Secures Enterprise Deal with Apex Automotive Systems',
+        content: 'Tecmotiv has executed a multi-year master services agreement to provide integrated telematics and fleet ERP management for Apex Automotive’s 25,000-vehicle fleet.',
         section: 'COMPANY NEWS',
         subType: 'New Client',
         priority: 'High',
@@ -295,7 +295,7 @@ async function seedCommunicationData() {
         authorName: 'David Head (VP of Engineering)',
       },
       {
-        title: 'TecMotiv Surpasses 10,000 Active Daily Logistics Deliverables',
+        title: 'Tecmotiv Surpasses 10,000 Active Daily Logistics Deliverables',
         content: 'A major operational milestone! Our unified ERP and operations platform processed over 10,000 live deliverables in a single business day with 99.98% uptime.',
         section: 'COMPANY NEWS',
         subType: 'Company Milestone',
@@ -359,7 +359,7 @@ async function seedCommunicationData() {
         authorName: 'David Head',
       },
       {
-        title: 'TecMotiv Keynote at Global Automotive Tech Summit 2026',
+        title: 'Tecmotiv Keynote at Global Automotive Tech Summit 2026',
         content: 'Our leadership team will be presenting a keynote on real-time vehicle telemetry at the Detroit Convention Center. Stream links available on the company calendar.',
         section: 'EVENTS',
         subType: 'Conferences',
@@ -369,7 +369,7 @@ async function seedCommunicationData() {
         authorName: 'Marcus Vance',
       },
       {
-        title: 'Annual TecMotiv Hackathon & People Cultural Social',
+        title: 'Annual Tecmotiv Hackathon & People Cultural Social',
         content: 'Gear up for 48 hours of rapid prototyping, creative brainstorming, and fun prizes! Register your 3-person team on the events portal by next Wednesday.',
         section: 'EVENTS',
         subType: 'Internal Activities',

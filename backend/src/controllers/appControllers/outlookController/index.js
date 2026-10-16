@@ -108,7 +108,7 @@ const connect = async (req, res) => {
     integration.tokenExpiresAt = tokenData.tokenExpiresAt;
     integration.tokenScope = tokenData.scope;
     integration.outlookEmail = tokenData.email || 'tecmotiv.calendar@outlook.com';
-    integration.displayName = tokenData.displayName || 'TecMotiv Outlook Sync';
+    integration.displayName = tokenData.displayName || 'Tecmotiv Outlook Sync';
     integration.isSandbox = Boolean(tokenData.isSandbox);
     integration.lastError = '';
     integration.user = user?._id || integration.user;

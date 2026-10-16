@@ -11,7 +11,7 @@ const getIntegrationDoc = async (user) => {
       user: user?._id,
       provider: 'google',
       googleEmail: process.env.EMAIL_USER || 'hkp12345h@gmail.com',
-      displayName: 'Harsh Kumar (TecMotiv)',
+      displayName: 'Harsh Kumar (Tecmotiv)',
       isConnected: true,
       status: 'connected',
       sourceOfTruth: 'TECMOTIV',
@@ -22,7 +22,7 @@ const getIntegrationDoc = async (user) => {
   } else if (!integration.googleEmail) {
     integration.provider = 'google';
     integration.googleEmail = process.env.EMAIL_USER || 'hkp12345h@gmail.com';
-    integration.displayName = 'Harsh Kumar (TecMotiv)';
+    integration.displayName = 'Harsh Kumar (Tecmotiv)';
     integration.isConnected = true;
     integration.status = 'connected';
     await integration.save();
@@ -44,7 +44,7 @@ const getStatus = async (req, res) => {
         isConnected: integration.isConnected,
         status: integration.status,
         googleEmail: integration.googleEmail || process.env.EMAIL_USER || 'hkp12345h@gmail.com',
-        displayName: integration.displayName || 'TecMotiv Google Calendar',
+        displayName: integration.displayName || 'Tecmotiv Google Calendar',
         sourceOfTruth: integration.sourceOfTruth,
         syncDirection: integration.syncDirection,
         lastSyncAt: integration.lastSyncAt || new Date(),

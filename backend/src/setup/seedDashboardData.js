@@ -44,7 +44,7 @@ async function seedDashboardData() {
 
     const announcementsToSeed = [
       {
-        title: 'TecMotiv Q4 Strategic Roadmap & Executive Town Hall',
+        title: 'Tecmotiv Q4 Strategic Roadmap & Executive Town Hall',
         content: 'Join the executive leadership team this Friday at 3:00 PM EST for our all-hands presentation on product milestones and corporate expansion.',
         category: 'Announcement',
         priority: 'High',
@@ -66,8 +66,8 @@ async function seedDashboardData() {
         date: new Date(Date.now() - 24 * 60 * 60 * 1000),
       },
       {
-        title: 'TecMotiv Awarded Best Enterprise Mobility Innovator 2026',
-        content: 'We are thrilled to announce that TecMotiv has been recognized as a top automotive & ERP mobility innovator by TechReview Global.',
+        title: 'Tecmotiv Awarded Best Enterprise Mobility Innovator 2026',
+        content: 'We are thrilled to announce that Tecmotiv has been recognized as a top automotive & ERP mobility innovator by TechReview Global.',
         category: 'News',
         priority: 'Normal',
         pinned: false,
@@ -121,7 +121,7 @@ async function seedDashboardData() {
         organizerName: 'Marcus Vance',
       },
       {
-        title: 'TecMotiv Monthly Knowledge Sharing Session',
+        title: 'Tecmotiv Monthly Knowledge Sharing Session',
         description: 'Tech talk on Event-Driven Architecture with Kafka and MongoDB Change Streams.',
         eventType: 'Event',
         startDate: todayEventDate,

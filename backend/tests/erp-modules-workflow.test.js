@@ -207,7 +207,7 @@ test('3. Bulletin Comms: HR/Admin can publish, employees can read/like but canno
     },
     body: JSON.stringify({
       title: `Official Bulletin Post ${qa.RUN_ID}`,
-      content: 'Welcome to TecMotiv ERP QA audit verification.',
+      content: 'Welcome to Tecmotiv ERP QA audit verification.',
       section: 'COMPANY NEWS',
     }),
   });

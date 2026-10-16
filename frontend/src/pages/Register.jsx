@@ -46,7 +46,7 @@ export default function RegisterPage() {
       });
 
       if (res && res.success) {
-        message.success('Account created successfully! Welcome to TecMotiv ERP.');
+        message.success('Account created successfully! Welcome to Tecmotiv ERP.');
         // Auto-login newly created active user
         try {
           await dispatch(
@@ -73,7 +73,7 @@ export default function RegisterPage() {
   const renderRegistrationFormContent = () => (
     <div>
       <Paragraph type="secondary" style={{ marginBottom: 20 }}>
-        Create your employee profile with TecMotiv ERP. Your account will be activated immediately.
+        Create your employee profile with Tecmotiv ERP. Your account will be activated immediately.
       </Paragraph>
 
       <Form

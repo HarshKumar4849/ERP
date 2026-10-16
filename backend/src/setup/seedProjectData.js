@@ -31,7 +31,7 @@ async function seedProjectData() {
       {
         name: 'MDS Core Engine & Telematics Pipeline',
         code: 'TM-MDS-2026-001',
-        client: 'TecMotiv Internal Core Platforms',
+        client: 'Tecmotiv Internal Core Platforms',
         category: 'MDS',
         department: 'Engineering',
         projectManager: employees[0]._id,
@@ -196,9 +196,9 @@ async function seedProjectData() {
 
       // 5. Events Category
       {
-        name: 'TecMotiv Annual Automotive Tech Summit & Hackathon',
+        name: 'Tecmotiv Annual Automotive Tech Summit & Hackathon',
         code: 'TM-EVT-2026-005',
-        client: 'TecMotiv People & Culture Board',
+        client: 'Tecmotiv People & Culture Board',
         category: 'Events',
         department: 'HR',
         projectManager: employees[0]._id,

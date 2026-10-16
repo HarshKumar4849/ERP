@@ -460,7 +460,7 @@ All 9 QA test suites pass with zero failures:
 
 ### 1. Overview and Environment Architecture
 
-Phase 7 executed an end-to-end, browser-level audit of the TecMotiv ERP application using Playwright driving actual Chromium browser sessions against a live isolated full-stack QA environment:
+Phase 7 executed an end-to-end, browser-level audit of the Tecmotiv ERP application using Playwright driving actual Chromium browser sessions against a live isolated full-stack QA environment:
 - **Backend QA Server**: Dedicated instance running on `http://127.0.0.1:8899/api/` connected to isolated database `tecmotiv_qa`.
 - **Frontend App**: Vite preview bundle running on `http://127.0.0.1:4173/` with dynamic `VITE_BACKEND_SERVER` configuration pointing to port 8899.
 - **Engine Coverage**: Playwright Chromium (version 156.0.8078.4). Only installed browser engines were used.
@@ -684,7 +684,7 @@ Zero test-generated artifacts, users, documents, or records remain in the databa
 
 ## EXECUTIVE SUMMARY
 
-A comprehensive, end-to-end security, workflow, adversarial, and regression audit of the **TecMotiv Solutions • ERP Platform** was completed across Phases 0 through 8. Testing evaluated every architectural tier: frontend route guards, client state management, HTTP APIs, role-based access control (RBAC) middleware, and underlying MongoDB document state.
+A comprehensive, end-to-end security, workflow, adversarial, and regression audit of the **Tecmotiv Solutions • ERP Platform** was completed across Phases 0 through 8. Testing evaluated every architectural tier: frontend route guards, client state management, HTTP APIs, role-based access control (RBAC) middleware, and underlying MongoDB document state.
 
 ### Core Role Capabilities & Boundaries
 - **ADMIN**:
@@ -821,7 +821,7 @@ A comprehensive, end-to-end security, workflow, adversarial, and regression audi
   - Setting an employee's department to `Finance` **does not** grant payroll administrative rights.
   - Setting an employee's department to `Management` **does not** grant administrative settings rights.
   - Setting an employee's department to `IT` **does not** grant IT Administration or server health rights.
-- **Enforcement Architecture**: Authorization is determined solely by the cryptographically signed JWT `role` claim (`ADMIN`, `HR`, `EMPLOYEE`), validated against server-side `ROLE_PERMISSIONS` in [`backend/src/middlewares/rbacMiddleware.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/src/middlewares/rbacMiddleware.js). Department strings exist purely as organizational metadata.
+- **Enforcement Architecture**: Authorization is determined solely by the cryptographically signed JWT `role` claim (`ADMIN`, `HR`, `EMPLOYEE`), validated against server-side `ROLE_PERMISSIONS` in [`backend/src/middlewares/rbacMiddleware.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/src/middlewares/rbacMiddleware.js). Department strings exist purely as organizational metadata.
 
 ---
 
@@ -890,11 +890,11 @@ A comprehensive, end-to-end security, workflow, adversarial, and regression audi
 
 | Defect # | Module / Component | Root Cause | File(s) Remediated | Regression Test Spec |
 |:---:|---|---|---|---|
-| **1** | Admin Profile & Password API | Missing RBAC middleware allowed non-admins to invoke admin update endpoints. | [`backend/src/routes/coreRoutes/coreApi.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/src/routes/coreRoutes/coreApi.js) | `backend/tests/security.test.js` |
-| **2** | Global System Settings API | Setting endpoints lacked role verification, allowing HR/Employee modifications. | [`backend/src/routes/coreRoutes/coreApi.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/src/routes/coreRoutes/coreApi.js) | `backend/tests/workflow.test.js` |
-| **3** | Employee Self-Update | Profile update controller did not whitelist input fields, risking role/status mass assignment. | [`backend/src/controllers/appControllers/employeeController/index.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/src/controllers/appControllers/employeeController/index.js) | `backend/tests/employee-payroll-workflow.test.js` |
-| **4** | Auth Token Revocation | JWT validation middleware checked user existence but ignored `user.enabled === false`, permitting deactivated accounts continued access until token expiration. | [`backend/src/controllers/middlewaresControllers/createAuthMiddleware/isValidAuthToken.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/src/controllers/middlewaresControllers/createAuthMiddleware/isValidAuthToken.js) | `backend/tests/phase8-adversarial-security.test.js` |
-| **5** | Frontend Dev Server Port | Stale `VITE_BACKEND_SERVER="http://127.0.0.1:8899/"` in `frontend/.env` pointed to inactive test port, causing `ERR_CONNECTION_REFUSED` on port 3000. | [`frontend/.env`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/frontend/.env) | Browser Subagent E2E Verification |
+| **1** | Admin Profile & Password API | Missing RBAC middleware allowed non-admins to invoke admin update endpoints. | [`backend/src/routes/coreRoutes/coreApi.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/src/routes/coreRoutes/coreApi.js) | `backend/tests/security.test.js` |
+| **2** | Global System Settings API | Setting endpoints lacked role verification, allowing HR/Employee modifications. | [`backend/src/routes/coreRoutes/coreApi.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/src/routes/coreRoutes/coreApi.js) | `backend/tests/workflow.test.js` |
+| **3** | Employee Self-Update | Profile update controller did not whitelist input fields, risking role/status mass assignment. | [`backend/src/controllers/appControllers/employeeController/index.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/src/controllers/appControllers/employeeController/index.js) | `backend/tests/employee-payroll-workflow.test.js` |
+| **4** | Auth Token Revocation | JWT validation middleware checked user existence but ignored `user.enabled === false`, permitting deactivated accounts continued access until token expiration. | [`backend/src/controllers/middlewaresControllers/createAuthMiddleware/isValidAuthToken.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/src/controllers/middlewaresControllers/createAuthMiddleware/isValidAuthToken.js) | `backend/tests/phase8-adversarial-security.test.js` |
+| **5** | Frontend Dev Server Port | Stale `VITE_BACKEND_SERVER="http://127.0.0.1:8899/"` in `frontend/.env` pointed to inactive test port, causing `ERR_CONNECTION_REFUSED` on port 3000. | [`frontend/.env`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/frontend/.env) | Browser Subagent E2E Verification |
 
 ---
 
@@ -951,7 +951,7 @@ All browser end-to-end tests were executed using the Playwright Chromium engine 
 ## 12. QA FIXTURE CLEANUP RESULTS
 
 - **Cleanup Execution**: `npm run qa:cleanup` invokes `backend/tests/cleanup-qa.js`, utilizing `cleanupAllQaFixtures()` in `backend/tests/fixtures.js`.
-- **Database Inspection**: Verified with [`backend/tests/verify-cleanup.js`](file:///c:/Users/hkp12/OneDrive/Desktop/TecMotiv/ERP/idurar-erp-crm/backend/tests/verify-cleanup.js) inspecting all MongoDB collections:
+- **Database Inspection**: Verified with [`backend/tests/verify-cleanup.js`](file:///c:/Users/hkp12/OneDrive/Desktop/Tecmotiv/ERP/idurar-erp-crm/backend/tests/verify-cleanup.js) inspecting all MongoDB collections:
   ```
   Total lingering audit fixtures: 0
   Verification Exit Code: 0
@@ -977,7 +977,7 @@ All browser end-to-end tests were executed using the Playwright Chromium engine 
 
 ## 14. FINAL CONCLUSION & SIGN-OFF
 
-The TecMotiv ERP application has undergone rigorous, multi-phase adversarial, role-boundary, and end-to-end regression auditing. All identified vulnerabilities have been remediated and verified with regression suites.
+The Tecmotiv ERP application has undergone rigorous, multi-phase adversarial, role-boundary, and end-to-end regression auditing. All identified vulnerabilities have been remediated and verified with regression suites.
 
 - **Security & Authorization Status**: **SECURE & VERIFIED**
 - **Test Pass Rate**: **100% (156 / 156 tests passing)**

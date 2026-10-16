@@ -225,7 +225,7 @@ export default function OutlookSyncModal({ visible, onClose, onSuccess }) {
         description: values.description || '',
         startDate: values.dateRange[0].toISOString(),
         endDate: values.dateRange[1].toISOString(),
-        location: values.location || 'TecMotiv Corporate Auditorium',
+        location: values.location || 'Tecmotiv Corporate Auditorium',
         isVirtual: Boolean(values.meetingLink),
         meetingLink: values.meetingLink || '',
       };
@@ -396,7 +396,7 @@ export default function OutlookSyncModal({ visible, onClose, onSuccess }) {
               <strong>Enterprise OAuth 2.0 Security Compliance</strong>
             </span>
           }
-          description="TecMotiv strictly never stores Microsoft account passwords. Authorization is handled exclusively via ephemeral OAuth 2.0 access & refresh tokens issued by the Microsoft identity platform."
+          description="Tecmotiv strictly never stores Microsoft account passwords. Authorization is handled exclusively via ephemeral OAuth 2.0 access & refresh tokens issued by the Microsoft identity platform."
           type="success"
           showIcon={false}
           style={{ marginBottom: 16, borderRadius: 6 }}
@@ -433,21 +433,21 @@ export default function OutlookSyncModal({ visible, onClose, onSuccess }) {
                                 <strong>Two-Way Synchronization</strong>
                                 <br />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Sync events in both directions (TecMotiv ↔ Outlook).
+                                  Sync events in both directions (Tecmotiv ↔ Outlook).
                                 </Text>
                               </Radio>
                               <Radio value="to-outlook">
-                                <strong>Push Only (TecMotiv → Outlook)</strong>
+                                <strong>Push Only (Tecmotiv → Outlook)</strong>
                                 <br />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   Export internal company events to Microsoft Outlook.
                                 </Text>
                               </Radio>
                               <Radio value="from-outlook">
-                                <strong>Pull Only (Outlook → TecMotiv)</strong>
+                                <strong>Pull Only (Outlook → Tecmotiv)</strong>
                                 <br />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Import Outlook events into TecMotiv calendar.
+                                  Import Outlook events into Tecmotiv calendar.
                                 </Text>
                               </Radio>
                             </Space>

@@ -34,7 +34,7 @@ export default function IdurarOs() {
   const { isLoggedIn } = useSelector(selectAuth);
 
   console.log(
-    '🚀 TecMotiv ERP • HR, Administration & Operations System initialized.'
+    '🚀 Tecmotiv ERP • HR, Administration & Operations System initialized.'
   );
 
   // // Online state

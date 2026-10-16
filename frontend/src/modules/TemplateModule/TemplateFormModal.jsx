@@ -238,7 +238,7 @@ export default function TemplateFormModal({
           </Col>
           <Col span={12}>
             <Form.Item name="subject" label="Default Subject Line (Optional)">
-              <Input placeholder="e.g. Welcome to TecMotiv — Joining Letter" />
+              <Input placeholder="e.g. Welcome to Tecmotiv — Joining Letter" />
             </Form.Item>
           </Col>
         </Row>

@@ -5,7 +5,7 @@ export function fixtureCredentials(role) {
   const runId = (process.env.QA_RUN_ID || 'browser-audit-2026').toLowerCase();
   return {
     email: `qa-${role.toLowerCase()}-${runId}@example.com`,
-    password: process.env.QA_FIXTURE_PASSWORD || 'TecMotiv-QA-Only-2026!',
+    password: process.env.QA_FIXTURE_PASSWORD || 'Tecmotiv-QA-Only-2026!',
   };
 }
 

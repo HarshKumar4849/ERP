@@ -56,7 +56,7 @@ async function seedDigitalServices() {
         notes: 'Primary MX routing, dual-delivery backup, and 30 TB shared company Drive pool.',
       },
       {
-        serviceName: 'TecMotiv.com & Brand Portals Domain Portfolio',
+        serviceName: 'Tecmotiv.com & Brand Portals Domain Portfolio',
         serviceType: 'Domain',
         accountOwner: employees[0]?._id,
         accountOwnerName: employees[0] ? `${employees[0].name} ${employees[0].surname || ''}` : 'IT Admin Lead',

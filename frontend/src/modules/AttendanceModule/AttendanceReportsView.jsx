@@ -146,7 +146,7 @@ export default function AttendanceReportsView({ currentAdmin, userRole }) {
     link.setAttribute('href', encodedUri);
     link.setAttribute(
       'download',
-      `TecMotiv_Attendance_Report_${dateRange[0]?.format('YYYYMMDD')}_${dateRange[1]?.format('YYYYMMDD')}.csv`
+      `Tecmotiv_Attendance_Report_${dateRange[0]?.format('YYYYMMDD')}_${dateRange[1]?.format('YYYYMMDD')}.csv`
     );
     document.body.appendChild(link);
     link.click();

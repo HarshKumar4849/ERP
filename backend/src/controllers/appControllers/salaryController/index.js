@@ -891,7 +891,7 @@ const downloadSlipPdf = async (req, res) => {
       </table>
 
       <div class="footer-note">
-        This is a system-generated document from TecMotiv ERP. No physical signature is required. For inquiries, contact payroll@tecmotiv.com.
+        This is a system-generated document from Tecmotiv ERP. No physical signature is required. For inquiries, contact payroll@tecmotiv.com.
       </div>
     </body>
     </html>
@@ -922,7 +922,7 @@ const downloadSlipPdf = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to generate PDF salary slip.' });
       }
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="TecMotiv-SalarySlip-${slipNo}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="Tecmotiv-SalarySlip-${slipNo}.pdf"`);
       stream.pipe(res);
     });
   } catch (error) {

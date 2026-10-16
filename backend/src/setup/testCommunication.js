@@ -88,8 +88,8 @@ async function testCommunication() {
     console.log(`   Total acknowledged: ${auditResult.result.totalAcknowledged} / ${auditResult.result.totalEmployees} (${auditResult.result.complianceRate}%)`);
     console.log(`   First signer in audit log: ${auditResult.result.acknowledgements[0]?.employeeName}`);
 
-    // 4. Test TecMotiv Bulletin 4 Sections Feed
-    console.log('\n--- Test 4: TecMotiv Bulletin Sections (News, Announcements, Events, Recognition) ---');
+    // 4. Test Tecmotiv Bulletin 4 Sections Feed
+    console.log('\n--- Test 4: Tecmotiv Bulletin Sections (News, Announcements, Events, Recognition) ---');
     let bulletinResult = null;
     await bulletinController.feed(
       { user: mgmtUser, userRole: 'MANAGEMENT', query: {} },

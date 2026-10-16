@@ -161,7 +161,7 @@ async function runTests() {
     const { req: upEvReq, res: upEvRes, getData: getUpEvData } = createMockReqRes(
       {
         title: '[TEST-OUTLOOK] Executive Board Sync (Updated Venue)',
-        location: 'TecMotiv Virtual Boardroom',
+        location: 'Tecmotiv Virtual Boardroom',
       },
       { id: outlookEventId }
     );
@@ -178,7 +178,7 @@ async function runTests() {
     // TEST 7: SYNCHRONIZATION WITH DEDUPLICATION (TECMOTIV <-> OUTLOOK)
     // -------------------------------------------------------------------------
     console.log('🔄 Test 7: Synchronize Company Events with Outlook');
-    // First, create 2 TecMotiv company events
+    // First, create 2 Tecmotiv company events
     const tecEvent1 = await new Event({
       title: '[TEST-OUTLOOK] Q4 Technology Keynote',
       eventName: '[TEST-OUTLOOK] Q4 Technology Keynote',
@@ -186,7 +186,7 @@ async function runTests() {
       eventType: 'Webinar',
       startDate: new Date('2026-12-05T14:00:00Z'),
       endDate: new Date('2026-12-05T16:00:00Z'),
-      location: 'TecMotiv Auditorium',
+      location: 'Tecmotiv Auditorium',
       department: 'Engineering',
       status: 'Scheduled',
     }).save();
@@ -203,7 +203,7 @@ async function runTests() {
       status: 'Scheduled',
     }).save();
 
-    console.log(`   Created 2 TecMotiv events in DB: ID ${tecEvent1._id}, ID ${tecEvent2._id}`);
+    console.log(`   Created 2 Tecmotiv events in DB: ID ${tecEvent1._id}, ID ${tecEvent2._id}`);
 
     // Run Two-Way Sync with TECMOTIV as Source of Truth
     const { req: syncReq, res: syncRes, getData: getSyncData } = createMockReqRes({
@@ -217,10 +217,10 @@ async function runTests() {
     // Verify tecEvent1 and tecEvent2 received outlookEventId
     const reloadedEv1 = await Event.findById(tecEvent1._id);
     const reloadedEv2 = await Event.findById(tecEvent2._id);
-    console.log(`   TecMotiv Event 1 Outlook ID: ${reloadedEv1.outlookEventId}`);
-    console.log(`   TecMotiv Event 2 Outlook ID: ${reloadedEv2.outlookEventId}`);
+    console.log(`   Tecmotiv Event 1 Outlook ID: ${reloadedEv1.outlookEventId}`);
+    console.log(`   Tecmotiv Event 2 Outlook ID: ${reloadedEv2.outlookEventId}`);
     if (!reloadedEv1.outlookEventId || !reloadedEv2.outlookEventId) {
-      throw new Error('Sync failed to link Outlook Event IDs to TecMotiv events');
+      throw new Error('Sync failed to link Outlook Event IDs to Tecmotiv events');
     }
     console.log('✅ Test 7 Passed: Company events synchronized and linked to Outlook.\n');
 

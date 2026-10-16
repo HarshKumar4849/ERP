@@ -38,7 +38,7 @@ function makeGitHubRequest(endpointPath, options = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(endpointPath, GITHUB_API_BASE);
     const headers = {
-      'User-Agent': 'TecMotiv-ERP',
+      'User-Agent': 'Tecmotiv-ERP',
       Accept: 'application/vnd.github.v3+json',
       ...options.headers,
     };
@@ -118,7 +118,7 @@ async function verifyAndFetchRepository(owner, repo) {
       fullName: `${owner}/${repo}`,
       repoUrl: `https://github.com/${owner}/${repo}`,
       defaultBranch: 'main',
-      description: 'TecMotiv Solutions Repository',
+      description: 'Tecmotiv Solutions Repository',
       isPrivate: false,
     };
   }
@@ -156,9 +156,9 @@ async function fetchCommits(owner, repo, { branch = 'main', page = 1, limit = 15
       {
         sha: '7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b',
         shortSha: '7a8b9c0',
-        message: 'feat(core): initialize TecMotiv ERP micro-services architecture',
+        message: 'feat(core): initialize Tecmotiv ERP micro-services architecture',
         author: {
-          name: 'TecMotiv Lead Engineer',
+          name: 'Tecmotiv Lead Engineer',
           username: 'tecmotiv-dev',
           date: new Date(Date.now() - 3600000).toISOString(),
           avatar: 'https://avatars.githubusercontent.com/u/50052356?v=4',
@@ -171,7 +171,7 @@ async function fetchCommits(owner, repo, { branch = 'main', page = 1, limit = 15
         shortSha: '8b9c0d1',
         message: 'fix(auth): enforce immediate session revocation for deactivated users',
         author: {
-          name: 'TecMotiv Security Engineer',
+          name: 'Tecmotiv Security Engineer',
           username: 'tecmotiv-sec',
           date: new Date(Date.now() - 7200000).toISOString(),
           avatar: 'https://avatars.githubusercontent.com/u/50052356?v=4',

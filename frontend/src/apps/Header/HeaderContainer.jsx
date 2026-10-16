@@ -201,7 +201,7 @@ export default function HeaderContent() {
             onClick={() => navigate('/')}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
           >
-            <img src={logoIcon} alt="TecMotiv" style={{ height: 26 }} />
+            <img src={logoIcon} alt="Tecmotiv" style={{ height: 26 }} />
             <span style={{ fontWeight: 800, fontSize: 16, color: '#002244', letterSpacing: '0.2px' }}>
               Tecmotiv
             </span>
@@ -209,7 +209,7 @@ export default function HeaderContent() {
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontWeight: 700, fontSize: 16, color: '#002244' }}>
-              TecMotiv Solutions • Enterprise ERP
+              Tecmotiv Solutions • Enterprise ERP
             </span>
           </div>
         )}

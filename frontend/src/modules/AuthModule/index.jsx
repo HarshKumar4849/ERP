@@ -25,7 +25,7 @@ const AuthModule = ({ authContent, AUTH_TITLE, isForRegistre = false }) => {
         <Col xs={{ span: 24 }} sm={{ span: 24 }} md={{ span: 0 }} span={0}>
           <img
             src={logo}
-            alt="TecMotiv Solutions"
+            alt="Tecmotiv Solutions"
             style={{
               margin: '0px auto 20px',
               display: 'block',

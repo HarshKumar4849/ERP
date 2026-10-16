@@ -88,7 +88,7 @@ async function testCompanyCalendar() {
             employeeName: `${emp1.name} ${emp1.surname}`,
             type: 'Work Anniversary',
             title: `${emp1.name}'s Work Anniversary`,
-            message: 'Congratulations John on your outstanding contributions to TecMotiv!',
+            message: 'Congratulations John on your outstanding contributions to Tecmotiv!',
             yearsCompleted: 2,
           },
         },

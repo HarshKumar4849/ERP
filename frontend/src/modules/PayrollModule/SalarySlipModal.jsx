@@ -484,7 +484,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
             paddingTop: '8px',
           }}
         >
-          This is a computer-generated salary slip from TecMotiv ERP. No physical signature is required. For inquiries, please contact payroll@tecmotiv.com.
+          This is a computer-generated salary slip from Tecmotiv ERP. No physical signature is required. For inquiries, please contact payroll@tecmotiv.com.
         </div>
       </div>
     </Modal>

@@ -16,7 +16,7 @@ export default function EventInvitationModal({ visible, onClose, event, onSucces
         subject: event.invitation?.subject || `Official Invitation: ${event.title || event.eventName}`,
         message:
           event.invitation?.message ||
-          `Dear Colleague,\n\nYou are cordially invited to attend the "${event.title || event.eventName}" organized by ${event.organizerName || 'TecMotiv People & Culture'}.\n\nDate: ${event.startDate ? new Date(event.startDate).toDateString() : ''}\nTime: ${event.time || event.startTime || '10:00 AM'}\nVenue: ${event.venue || event.location || 'TecMotiv Corporate Auditorium'}\n\nWe look forward to your participation!\n\nWarm regards,\nTecMotiv Team`,
+          `Dear Colleague,\n\nYou are cordially invited to attend the "${event.title || event.eventName}" organized by ${event.organizerName || 'Tecmotiv People & Culture'}.\n\nDate: ${event.startDate ? new Date(event.startDate).toDateString() : ''}\nTime: ${event.time || event.startTime || '10:00 AM'}\nVenue: ${event.venue || event.location || 'Tecmotiv Corporate Auditorium'}\n\nWe look forward to your participation!\n\nWarm regards,\nTecmotiv Team`,
       });
     }
   }, [visible, event, form]);

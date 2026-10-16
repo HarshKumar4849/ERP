@@ -64,11 +64,11 @@ const schema = new mongoose.Schema({
   },
   venue: {
     type: String,
-    default: 'TecMotiv Corporate Auditorium',
+    default: 'Tecmotiv Corporate Auditorium',
   },
   location: {
     type: String,
-    default: 'TecMotiv Corporate Auditorium',
+    default: 'Tecmotiv Corporate Auditorium',
   },
   department: {
     type: String,
@@ -86,7 +86,7 @@ const schema = new mongoose.Schema({
   organizerName: {
     type: String,
     trim: true,
-    default: 'TecMotiv Events & Culture Committee',
+    default: 'Tecmotiv Events & Culture Committee',
   },
   participants: [
     {

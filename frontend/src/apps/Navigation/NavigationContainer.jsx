@@ -210,7 +210,7 @@ function Sidebar({ collapsible, isMobile = false, onNavigate }) {
             borderBottom: '1px solid #f0f0f0',
           }}
         >
-          <img src={logoIcon} alt="TecMotiv Logo" style={{ height: '32px' }} />
+          <img src={logoIcon} alt="Tecmotiv Logo" style={{ height: '32px' }} />
           <div style={{ marginLeft: 12, lineHeight: 1.2 }}>
             <span
               style={{
@@ -280,7 +280,7 @@ function Sidebar({ collapsible, isMobile = false, onNavigate }) {
           alignItems: 'center',
         }}
       >
-        <img src={logoIcon} alt="TecMotiv Logo" style={{ height: '32px' }} />
+        <img src={logoIcon} alt="Tecmotiv Logo" style={{ height: '32px' }} />
 
         {!showLogoApp && (
           <div style={{ marginLeft: 12, lineHeight: 1.2 }}>

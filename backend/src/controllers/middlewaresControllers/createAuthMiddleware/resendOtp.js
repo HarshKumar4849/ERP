@@ -56,13 +56,13 @@ const resendOtp = async (req, res, { userModel }) => {
     const htmlEmail = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e8e8e8; overflow: hidden;">
         <div style="background: #002244; padding: 28px 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">TecMotiv ERP</h1>
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Tecmotiv ERP</h1>
           <p style="color: #69c0ff; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">New Verification Code</p>
         </div>
         <div style="padding: 36px 32px;">
           <h2 style="color: #1f1f1f; margin-top: 0; font-size: 20px;">Hello, ${user.name}!</h2>
           <p style="color: #595959; font-size: 15px; line-height: 1.6;">
-            Here is your new 6-digit verification code to complete your TecMotiv ERP account verification:
+            Here is your new 6-digit verification code to complete your Tecmotiv ERP account verification:
           </p>
           <div style="background: #f0f5ff; border: 1.5px dashed #2f54eb; border-radius: 8px; padding: 20px; text-align: center; margin: 28px 0;">
             <span style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #10239e;">${otp}</span>
@@ -73,7 +73,7 @@ const resendOtp = async (req, res, { userModel }) => {
           </p>
         </div>
         <div style="background: #fafafa; padding: 18px 32px; text-align: center; border-top: 1px solid #f0f0f0;">
-          <p style="color: #bfbfbf; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} TecMotiv ERP. All rights reserved.</p>
+          <p style="color: #bfbfbf; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} Tecmotiv ERP. All rights reserved.</p>
         </div>
       </div>
     `;
@@ -81,9 +81,9 @@ const resendOtp = async (req, res, { userModel }) => {
     try {
       await mail.send({
         to: cleanEmail,
-        subject: `${otp} is your new TecMotiv ERP verification code`,
+        subject: `${otp} is your new Tecmotiv ERP verification code`,
         html: htmlEmail,
-        text: `Your new TecMotiv ERP verification code is ${otp}. It expires in 10 minutes.`,
+        text: `Your new Tecmotiv ERP verification code is ${otp}. It expires in 10 minutes.`,
       });
     } catch (mailError) {
       console.error('Failed to send resend OTP email:', mailError);

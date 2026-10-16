@@ -35,7 +35,7 @@ module.exports = {
   HOST: process.env.QA_API_HOST || '127.0.0.1',
   PORT: Number(process.env.QA_API_PORT || 0),
   FRONTEND_URL: process.env.QA_FRONTEND_URL || '',
-  PASSWORD: process.env.QA_FIXTURE_PASSWORD || 'TecMotiv-QA-Only-2026!',
+  PASSWORD: process.env.QA_FIXTURE_PASSWORD || 'Tecmotiv-QA-Only-2026!',
   RUN_ID: process.env.QA_RUN_ID || `${Date.now()}-${process.pid}`,
   assertSafeQaDatabase,
 };

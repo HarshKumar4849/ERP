@@ -203,7 +203,7 @@ if (appControllers['taskController']) {
   );
 }
 
-// Dedicated TecMotiv Management Dashboard endpoint
+// Dedicated Tecmotiv Management Dashboard endpoint
 if (appControllers['dashboardController']) {
   router.route('/dashboard/overview').get(
     rbacMiddleware('dashboard', 'read'),
@@ -266,7 +266,7 @@ if (appControllers['policyController']) {
   );
 }
 
-// Dedicated TecMotiv Bulletin & Company Comms endpoints
+// Dedicated Tecmotiv Bulletin & Company Comms endpoints
 if (appControllers['bulletinController']) {
   router.route('/bulletin/feed').get(
     rbacMiddleware('bulletin', 'read'),
@@ -508,7 +508,7 @@ if (appControllers['notificationController']) {
   );
 }
 
-// Dedicated GitHub Integration endpoints for TecMotiv Engineering Projects
+// Dedicated GitHub Integration endpoints for Tecmotiv Engineering Projects
 if (appControllers['githubController']) {
   const { githubProxyLimiter, githubSyncLimiter } = require('../../middlewares/githubRateLimiter');
 
