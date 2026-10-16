@@ -48,14 +48,17 @@ test.describe('responsive layouts', () => {
     await page.locator('.mobile-sidebar-btn').click();
     const drawer = page.locator('.ant-drawer-content');
     await expect(drawer).toBeVisible();
+    await drawer.click({ position: { x: 12, y: 12 } });
     await page.keyboard.press('Escape');
-    // drawer may animate out; wait until it's hidden to avoid flakiness
     await expect(drawer).toBeHidden({ timeout: 5000 });
 
     await page.goto('/leave');
     await page.getByRole('button', { name: /apply for leave/i }).first().click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
+    await dialog.getByRole('heading').first().click().catch(() => dialog.click({ position: { x: 5, y: 5 } }));
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden({ timeout: 5000 });
 
     const box = await dialog.boundingBox();
     expect(box.width, 'dialog is wider than the mobile viewport').toBeLessThanOrEqual(520);
