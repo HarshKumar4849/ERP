@@ -1,0 +1,133 @@
+.wideAppContainer {
+  max-width: 1150px;
+}
+
+.appContainer {
+  max-width: 1050px;
+}
+
+.smallNavigation {
+  margin-left: 100px;
+}
+
+.wideNavigation {
+  margin-left: 220px;
+}
+
+/* Global Responsive Viewport & Containment */
+html, body, #root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  min-height: 100vh;
+}
+
+/* Responsive Table Wrapper Containment */
+.ant-table-wrapper {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.ant-table-container {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Modal Constraint */
+.ant-modal {
+  max-width: calc(100vw - 24px) !important;
+  margin: 16px auto !important;
+}
+
+.ant-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ant-modal-body {
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Drawer Constraint */
+.ant-drawer-content-wrapper {
+  max-width: 100vw !important;
+}
+
+/* Mobile Spacing & Touch Targets */
+@media (max-width: 768px) {
+  .ant-card {
+    border-radius: 10px !important;
+  }
+
+  .ant-card-head {
+    padding: 0 14px !important;
+    min-height: 48px !important;
+    font-size: 14px !important;
+  }
+
+  .ant-card-body {
+    padding: 14px !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+
+  .ant-btn {
+    font-size: 13px;
+  }
+
+  /* Prevent text clipping in header tags on small screens */
+  .ant-tag {
+    margin-inline-end: 4px;
+    font-size: 11px;
+  }
+}
+
+/* Stack 2-column or 3-column modal/drawer form items into single column on mobile */
+@media (max-width: 600px) {
+  .ant-drawer .ant-row > .ant-col-12,
+  .ant-modal .ant-row > .ant-col-12,
+  .ant-drawer .ant-row > .ant-col-8,
+  .ant-modal .ant-row > .ant-col-8 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure auth content fits comfortably on small mobile */
+  .auth-form-content {
+    padding: 32px 16px 24px !important;
+  }
+
+  /* Wrap modal footers cleanly on small screens */
+  .ant-modal-footer {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: flex-end !important;
+  }
+  .ant-modal-footer .ant-btn {
+    margin-inline-start: 0 !important;
+    margin-bottom: 4px !important;
+  }
+}
+
+/* Printable Salary Slip responsive container */
+#printable-salary-slip {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Calendar month view responsiveness on small screens */
+@media (max-width: 576px) {
+  .ant-picker-calendar .ant-picker-cell-inner {
+    min-height: 44px !important;
+  }
+  .ant-picker-calendar .ant-picker-calendar-date-content {
+    height: 38px !important;
+    overflow: hidden;
+  }
+}
+

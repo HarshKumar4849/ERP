@@ -1,0 +1,21 @@
+{
+  "name": "tecmotiv-erp",
+  "version": "4.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.x <=24.x"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "start": "npm --prefix backend start",
+    "backend": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build"
+  }
+}

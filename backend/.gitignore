@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment files (NEVER commit live credentials)
+.env
+.env.local
+.env.*.local
+.env.qa
+*.env
+!*.example
+
+# Uploaded user files
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/setting/
+!public/uploads/employee/.gitkeep
+
+# Logs and runtime outputs
+*.log
+*.zip
+*.pdf
+
+# System & IDE
+.DS_Store
+.idea/
+.vscode/
+notes.md
