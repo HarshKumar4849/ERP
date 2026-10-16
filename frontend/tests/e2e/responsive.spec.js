@@ -49,7 +49,8 @@ test.describe('responsive layouts', () => {
     const drawer = page.locator('.ant-drawer-content');
     await expect(drawer).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(drawer).toBeHidden();
+    // drawer may animate out; wait until it's hidden to avoid flakiness
+    await expect(drawer).toBeHidden({ timeout: 5000 });
 
     await page.goto('/leave');
     await page.getByRole('button', { name: /apply for leave/i }).first().click();
