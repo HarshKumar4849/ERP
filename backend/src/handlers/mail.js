@@ -21,10 +21,38 @@ exports.send = async ({ to, subject, html, text }) => {
 
   let lastError = null;
 
+  // 1. Try Resend first if API key is provided
+  if (process.env.RESEND_API && process.env.RESEND_API !== 'test') {
+    try {
+      const resend = new Resend(process.env.RESEND_API);
+      const resendFrom = process.env.EMAIL_FROM || 'TecMotiv ERP <onboarding@resend.dev>';
+      const { data, error } = await resend.emails.send({
+        from: resendFrom,
+        to,
+        subject,
+        html,
+      });
+      if (error) {
+        lastError = error;
+        console.warn('Resend send error, attempting fallback:', error.message || error);
+      } else {
+        return { success: true, provider: 'resend', data };
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn('Resend dispatch failed, attempting fallback:', err.message);
+    }
+  }
+
+  // 2. Try Nodemailer / SMTP
   if (transporter) {
     try {
+      const smtpFrom =
+        process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('resend.dev')
+          ? process.env.EMAIL_FROM
+          : (process.env.EMAIL_USER ? `TecMotiv ERP <${process.env.EMAIL_USER}>` : 'TecMotiv ERP <no-reply@tecmotiv.com>');
       const info = await transporter.sendMail({
-        from,
+        from: smtpFrom,
         to,
         subject,
         text,
@@ -34,27 +62,6 @@ exports.send = async ({ to, subject, html, text }) => {
     } catch (err) {
       lastError = err;
       console.error('Nodemailer send failed:', err.message);
-    }
-  }
-
-  if (process.env.RESEND_API && process.env.RESEND_API !== 'test') {
-    try {
-      const resend = new Resend(process.env.RESEND_API);
-      const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'TecMotiv ERP <onboarding@resend.dev>',
-        to,
-        subject,
-        html,
-      });
-      if (error) {
-        lastError = error;
-        console.error('Resend returned error:', error.message || error);
-      } else {
-        return { success: true, provider: 'resend', data };
-      }
-    } catch (err) {
-      lastError = err;
-      console.error('Resend send failed:', err.message);
     }
   }
 
