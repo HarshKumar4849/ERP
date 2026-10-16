@@ -24,7 +24,39 @@ exports.send = async ({ to, subject, html, text }) => {
 
   let lastError = null;
 
-  // 1. Try Resend first if API key is provided
+  // 1. Try Brevo HTTP API if API key is provided (no domain required, HTTPS port 443)
+  if (process.env.BREVO_API_KEY) {
+    try {
+      const senderEmail = process.env.EMAIL_USER || 'hkp12345h@gmail.com';
+      const senderName = process.env.EMAIL_FROM_NAME || 'TecMotiv ERP';
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY.trim(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+          textContent: text,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        return { success: true, provider: 'brevo', data };
+      }
+      lastError = new Error(data.message || 'Brevo API error');
+      console.warn('Brevo send error, attempting fallback:', data.message);
+    } catch (err) {
+      lastError = err;
+      console.warn('Brevo dispatch failed, attempting fallback:', err.message);
+    }
+  }
+
+  // 2. Try Resend if API key is provided
   if (process.env.RESEND_API && process.env.RESEND_API !== 'test') {
     try {
       const resend = new Resend(process.env.RESEND_API);
