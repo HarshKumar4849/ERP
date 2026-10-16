@@ -99,10 +99,14 @@ const forgetPassword = async (req, res, { userModel }) => {
         });
       } catch (mailErr) {
         console.error('Password reset email failed to send:', mailErr.message);
+        const isSandboxError = mailErr.message && mailErr.message.includes('only send testing emails');
         return res.status(500).json({
           success: false,
           result: null,
-          message: 'Unable to deliver password reset email. Please contact your Administrator to reset your password directly.',
+          sandboxRestriction: isSandboxError,
+          message: isSandboxError
+            ? 'Resend Sandbox Restriction: Emails can only be delivered to the registered Resend account (hkp12345h@gmail.com). To send to any user, please verify a domain in resend.com/domains.'
+            : 'Unable to deliver password reset email. Please contact your Administrator to reset your password directly.',
         });
       }
     }
