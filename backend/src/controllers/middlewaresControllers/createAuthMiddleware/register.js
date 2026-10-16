@@ -41,20 +41,16 @@ const register = async (req, res, { userModel }) => {
       });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(salt + password);
 
     let user;
-    if (existingUser && !existingUser.enabled) {
-      // Re-use pending unverified registration
+    if (existingUser) {
       existingUser.name = name.trim();
       existingUser.surname = surname ? surname.trim() : '';
       existingUser.department = department.trim();
       existingUser.role = 'EMPLOYEE';
+      existingUser.enabled = true;
       user = await existingUser.save();
 
       await UserPasswordModel.findOneAndUpdate(
@@ -62,21 +58,19 @@ const register = async (req, res, { userModel }) => {
         {
           password: hashedPassword,
           salt: salt,
-          emailOtp: otp,
-          emailOtpExpires: otpExpires,
-          emailVerified: false,
+          emailVerified: true,
         },
         { upsert: true }
       );
     } else {
-      // Create new unverified user
+      // Create new active user directly without OTP roadblock
       user = new UserModel({
         name: name.trim(),
         surname: surname ? surname.trim() : '',
         email: cleanEmail,
         role: 'EMPLOYEE',
         department: department.trim(),
-        enabled: false,
+        enabled: true,
         removed: false,
       });
       await user.save();
@@ -85,31 +79,22 @@ const register = async (req, res, { userModel }) => {
         user: user._id,
         password: hashedPassword,
         salt: salt,
-        emailOtp: otp,
-        emailOtpExpires: otpExpires,
-        emailVerified: false,
+        emailVerified: true,
       });
       await userPassword.save();
     }
 
-    // Send email with OTP
-    const htmlEmail = `
+    // Optional welcome email (non-blocking, never fails registration)
+    const welcomeHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e8e8e8; overflow: hidden;">
         <div style="background: #002244; padding: 28px 32px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">TecMotiv ERP</h1>
-          <p style="color: #69c0ff; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Account Verification</p>
+          <p style="color: #69c0ff; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Welcome to the Team</p>
         </div>
         <div style="padding: 36px 32px;">
           <h2 style="color: #1f1f1f; margin-top: 0; font-size: 20px;">Welcome to TecMotiv, ${name}!</h2>
           <p style="color: #595959; font-size: 15px; line-height: 1.6;">
-            Thank you for registering your employee account. To complete your registration and log in, please enter the 6-digit verification code below:
-          </p>
-          <div style="background: #f0f5ff; border: 1.5px dashed #2f54eb; border-radius: 8px; padding: 20px; text-align: center; margin: 28px 0;">
-            <span style="font-family: monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #10239e;">${otp}</span>
-            <p style="color: #8c8c8c; font-size: 12px; margin: 8px 0 0 0;">This code expires in 10 minutes</p>
-          </div>
-          <p style="color: #8c8c8c; font-size: 13px; line-height: 1.5;">
-            If you did not request this registration, you can safely ignore this email.
+            Your employee account has been created successfully. You can now log in to TecMotiv ERP with your email and password.
           </p>
         </div>
         <div style="background: #fafafa; padding: 18px 32px; text-align: center; border-top: 1px solid #f0f0f0;">
@@ -119,22 +104,27 @@ const register = async (req, res, { userModel }) => {
     `;
 
     try {
-      await mail.send({
+      mail.send({
         to: cleanEmail,
-        subject: `${otp} is your TecMotiv ERP verification code`,
-        html: htmlEmail,
-        text: `Your TecMotiv ERP verification code is ${otp}. It expires in 10 minutes.`,
+        subject: `Welcome to TecMotiv ERP, ${name}!`,
+        html: welcomeHtml,
+        text: `Welcome to TecMotiv ERP, ${name}! Your employee account has been created successfully and is ready to use.`,
+      }).catch((mailErr) => {
+        console.warn('Welcome email skipped:', mailErr.message);
       });
-    } catch (mailError) {
-      console.error('Failed to send verification email:', mailError);
-    }
+    } catch (_) {}
 
     return res.status(200).json({
       success: true,
       result: {
+        _id: user._id,
+        name: user.name,
+        surname: user.surname,
         email: cleanEmail,
+        role: user.role,
+        department: user.department,
       },
-      message: 'Verification code sent to your email.',
+      message: 'Account created successfully! You can now log in.',
     });
   } catch (error) {
     console.error('Registration error:', error);
