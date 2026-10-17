@@ -21,7 +21,14 @@ const LoginPage = () => {
 
   const dispatch = useDispatch();
   const onFinish = (values) => {
-    dispatch(login({ loginData: values }));
+    dispatch(
+      login({
+        loginData: {
+          ...values,
+          email: values.email ? values.email.trim().toLowerCase() : '',
+        },
+      })
+    );
   };
 
   useEffect(() => {

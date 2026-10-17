@@ -9,6 +9,8 @@ const login = async (req, res, { userModel }) => {
   const UserModel = mongoose.model(userModel);
   const { email, password } = req.body;
 
+  const cleanEmail = (email || '').trim().toLowerCase();
+
   // validate
   const objectSchema = Joi.object({
     email: Joi.string()
@@ -17,7 +19,7 @@ const login = async (req, res, { userModel }) => {
     password: Joi.string().required(),
   });
 
-  const { error, value } = objectSchema.validate({ email, password });
+  const { error } = objectSchema.validate({ email: cleanEmail, password });
   if (error) {
     return res.status(409).json({
       success: false,
@@ -28,9 +30,26 @@ const login = async (req, res, { userModel }) => {
     });
   }
 
-  const user = await UserModel.findOne({ email: email, removed: false });
+  // 1. Exact or case-insensitive search
+  let user = await UserModel.findOne({
+    $or: [
+      { email: cleanEmail },
+      { email: { $regex: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
+    ],
+    removed: false,
+  });
 
-  // console.log(user);
+  // 2. Resilient typo tolerance (e.g., gamil.com vs gmail.com)
+  if (!user && cleanEmail.includes('@')) {
+    if (cleanEmail.endsWith('@gmail.com')) {
+      const typoVariant = cleanEmail.replace('@gmail.com', '@gamil.com');
+      user = await UserModel.findOne({ email: typoVariant, removed: false });
+    } else if (cleanEmail.endsWith('@gamil.com')) {
+      const fixedVariant = cleanEmail.replace('@gamil.com', '@gmail.com');
+      user = await UserModel.findOne({ email: fixedVariant, removed: false });
+    }
+  }
+
   if (!user)
     return res.status(403).json({
       success: false,
@@ -53,7 +72,7 @@ const login = async (req, res, { userModel }) => {
       message: 'Your account is disabled, contact your account adminstrator',
     });
 
-  //  authUser if your has correct password
+  // authUser if user has correct password
   authUser(req, res, {
     user,
     databasePassword,
