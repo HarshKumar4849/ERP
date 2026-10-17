@@ -170,7 +170,7 @@ const register = async (req, res, { userModel }) => {
         photo: user.photo,
         token: token,
       },
-      message: 'Account created successfully! You are now logged in.',
+      message: 'Account created successfully! Please sign in with your credentials.',
     });
   } catch (error) {
     console.error('Registration error:', error);

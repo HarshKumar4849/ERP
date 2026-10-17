@@ -35,7 +35,7 @@ export const register = async ({ registerData }) => {
     successHandler(
       { data, status },
       {
-        notifyOnSuccess: true,
+        notifyOnSuccess: false,
         notifyOnFailed: true,
       }
     );

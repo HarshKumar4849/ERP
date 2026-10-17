@@ -42,8 +42,13 @@ export default function RegisterPage() {
       });
 
       if (res && res.success) {
-        message.success('Account created successfully! Please sign in with your credentials.');
-        navigate('/login');
+        message.success('Account created successfully! Redirecting to login...');
+        navigate('/login', { replace: true });
+        setTimeout(() => {
+          if (window.location.pathname.includes('/register')) {
+            window.location.href = '/login';
+          }
+        }, 300);
       } else {
         message.error(res?.message || 'Registration failed. Please check your details.');
       }
