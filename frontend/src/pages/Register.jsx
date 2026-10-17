@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Form,
@@ -18,15 +17,12 @@ import {
 } from '@ant-design/icons';
 import AuthModule from '@/modules/AuthModule';
 import { register as registerApi } from '@/auth/auth.service';
-import { login } from '@/redux/auth/actions';
 
 const { Text, Paragraph } = Typography;
 const { Option } = Select;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
@@ -46,34 +42,8 @@ export default function RegisterPage() {
       });
 
       if (res && res.success) {
-        message.success('Account created successfully! Welcome to Tecmotiv ERP.');
-        // Auto-login newly created active user immediately
-        if (res.result && res.result.token) {
-          const auth_state = {
-            current: res.result,
-            isLoggedIn: true,
-            isLoading: false,
-            isSuccess: true,
-          };
-          window.localStorage.setItem('auth', JSON.stringify(auth_state));
-          window.localStorage.removeItem('isLogout');
-          dispatch({
-            type: 'AUTH_REQUEST_SUCCESS',
-            payload: res.result,
-          });
-        } else {
-          try {
-            await dispatch(
-              login({
-                loginData: {
-                  email: values.email.trim().toLowerCase(),
-                  password: values.password,
-                },
-              })
-            );
-          } catch (_) {}
-        }
-        navigate('/');
+        message.success('Account created successfully! Please sign in with your credentials.');
+        navigate('/login');
       } else {
         message.error(res?.message || 'Registration failed. Please check your details.');
       }
