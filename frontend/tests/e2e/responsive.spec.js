@@ -56,13 +56,13 @@ test.describe('responsive layouts', () => {
     await page.getByRole('button', { name: /apply for leave/i }).first().click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('heading').first().click().catch(() => dialog.click({ position: { x: 5, y: 5 } }));
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden({ timeout: 5000 });
-
     const box = await dialog.boundingBox();
     expect(box.width, 'dialog is wider than the mobile viewport').toBeLessThanOrEqual(520);
     expect(box.x, 'dialog starts outside the viewport').toBeGreaterThanOrEqual(0);
+
+    await dialog.getByRole('heading').first().click().catch(() => dialog.click({ position: { x: 5, y: 5 } }));
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden({ timeout: 5000 });
   });
 
   test('form input survives a viewport change mid-form', async ({ page }) => {
