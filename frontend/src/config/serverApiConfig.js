@@ -1,9 +1,15 @@
 const getBackendServer = () => {
+  if (typeof window !== 'undefined') {
+    if (
+      import.meta.env.PROD ||
+      window.location.origin.includes('vercel.app') ||
+      (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ) {
+      return window.location.origin;
+    }
+  }
   if (import.meta.env.VITE_BACKEND_SERVER) {
     return import.meta.env.VITE_BACKEND_SERVER;
-  }
-  if (typeof window !== 'undefined' && window.location.origin.includes('vercel.app')) {
-    return window.location.origin;
   }
   return 'http://localhost:8888/';
 };
