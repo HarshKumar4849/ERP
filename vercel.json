@@ -7,15 +7,12 @@
     },
     "backend": {
       "root": "backend",
-      "framework": "express"
-    }
-  },
-  "functions": {
-    "index.js": {
-      "includeFiles": "backend/src/**"
-    },
-    "backend/index.js": {
-      "includeFiles": "src/**"
+      "framework": "express",
+      "functions": {
+        "index.js": {
+          "includeFiles": "src/**"
+        }
+      }
     }
   },
   "rewrites": [
