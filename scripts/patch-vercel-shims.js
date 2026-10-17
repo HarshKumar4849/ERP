@@ -21,3 +21,18 @@ if (fs.existsSync(virtualDir)) {
 } else {
   console.log('[PATCH] _virtual directory not found, skipping.');
 }
+
+const frontendConfigPath = path.resolve(__dirname, '../.vercel/output/services/frontend/config.json');
+if (fs.existsSync(frontendConfigPath)) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(frontendConfigPath, 'utf8'));
+    cfg.routes = [
+      { handle: 'filesystem' },
+      { src: '/(.*)', dest: '/index.html' },
+    ];
+    fs.writeFileSync(frontendConfigPath, JSON.stringify(cfg, null, 2), 'utf8');
+    console.log('[PATCH] Added SPA fallback routing to frontend service config.json.');
+  } catch (e) {
+    console.error('[PATCH] Failed to patch frontend service config.json:', e);
+  }
+}
