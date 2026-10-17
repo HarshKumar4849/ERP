@@ -47,17 +47,32 @@ export default function RegisterPage() {
 
       if (res && res.success) {
         message.success('Account created successfully! Welcome to Tecmotiv ERP.');
-        // Auto-login newly created active user
-        try {
-          await dispatch(
-            login({
-              loginData: {
-                email: values.email.trim().toLowerCase(),
-                password: values.password,
-              },
-            })
-          );
-        } catch (_) {}
+        // Auto-login newly created active user immediately
+        if (res.result && res.result.token) {
+          const auth_state = {
+            current: res.result,
+            isLoggedIn: true,
+            isLoading: false,
+            isSuccess: true,
+          };
+          window.localStorage.setItem('auth', JSON.stringify(auth_state));
+          window.localStorage.removeItem('isLogout');
+          dispatch({
+            type: 'AUTH_REQUEST_SUCCESS',
+            payload: res.result,
+          });
+        } else {
+          try {
+            await dispatch(
+              login({
+                loginData: {
+                  email: values.email.trim().toLowerCase(),
+                  password: values.password,
+                },
+              })
+            );
+          } catch (_) {}
+        }
         navigate('/');
       } else {
         message.error(res?.message || 'Registration failed. Please check your details.');

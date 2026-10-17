@@ -1,7 +1,21 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const Joi = require('joi');
-const mail = require('../../../handlers/mail');
+
+const generateEmployeeCode = async () => {
+  const Employee = mongoose.model('Employee');
+  for (let attempts = 0; attempts < 30; attempts++) {
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const testId = `TM-${randNum}`;
+    const exists = await Employee.findOne({ employeeId: testId });
+    if (!exists) {
+      return testId;
+    }
+  }
+  const count = await Employee.countDocuments();
+  return `TM-${1000 + count + 1}`;
+};
 
 const register = async (req, res, { userModel }) => {
   try {
@@ -59,11 +73,13 @@ const register = async (req, res, { userModel }) => {
           password: hashedPassword,
           salt: salt,
           emailVerified: true,
+          emailOtp: null,
+          emailOtpExpires: null,
         },
         { upsert: true }
       );
     } else {
-      // Create new active user directly without OTP roadblock
+      // Create new active user directly — zero OTP or verification roadblock
       user = new UserModel({
         name: name.trim(),
         surname: surname ? surname.trim() : '',
@@ -80,39 +96,65 @@ const register = async (req, res, { userModel }) => {
         password: hashedPassword,
         salt: salt,
         emailVerified: true,
+        emailOtp: null,
+        emailOtpExpires: null,
       });
       await userPassword.save();
     }
 
-    // Optional welcome email (non-blocking, never fails registration)
-    const welcomeHtml = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e8e8e8; overflow: hidden;">
-        <div style="background: #002244; padding: 28px 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Tecmotiv ERP</h1>
-          <p style="color: #69c0ff; margin: 6px 0 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Welcome to the Team</p>
-        </div>
-        <div style="padding: 36px 32px;">
-          <h2 style="color: #1f1f1f; margin-top: 0; font-size: 20px;">Welcome to Tecmotiv, ${name}!</h2>
-          <p style="color: #595959; font-size: 15px; line-height: 1.6;">
-            Your employee account has been created successfully. You can now log in to Tecmotiv ERP with your email and password.
-          </p>
-        </div>
-        <div style="background: #fafafa; padding: 18px 32px; text-align: center; border-top: 1px solid #f0f0f0;">
-          <p style="color: #bfbfbf; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} Tecmotiv ERP. All rights reserved.</p>
-        </div>
-      </div>
-    `;
+    // Automatically create or link Employee profile for instant ERP access
+    const EmployeeModel = mongoose.model('Employee');
+    let empDoc = await EmployeeModel.findOne({
+      $or: [{ user: user._id }, { email: cleanEmail }],
+      removed: false,
+    });
 
-    try {
-      mail.send({
-        to: cleanEmail,
-        subject: `Welcome to Tecmotiv ERP, ${name}!`,
-        html: welcomeHtml,
-        text: `Welcome to Tecmotiv ERP, ${name}! Your employee account has been created successfully and is ready to use.`,
-      }).catch((mailErr) => {
-        console.warn('Welcome email skipped:', mailErr.message);
+    if (!empDoc) {
+      const empCode = await generateEmployeeCode();
+      empDoc = new EmployeeModel({
+        employeeId: empCode,
+        name: user.name,
+        surname: user.surname || '',
+        email: cleanEmail,
+        departmentName: user.department || 'General',
+        status: 'Active',
+        user: user._id,
+        removed: false,
+        enabled: true,
       });
-    } catch (_) {}
+      await empDoc.save();
+      user.employeeId = empCode;
+    } else {
+      if (!empDoc.user) {
+        empDoc.user = user._id;
+        await empDoc.save();
+      }
+      user.employeeId = empDoc.employeeId;
+      const isHr =
+        empDoc.departmentName === 'Human Resources' ||
+        empDoc.departmentName === 'HR' ||
+        (empDoc.designationName && /HR|People|Human Resource/i.test(empDoc.designationName));
+      if (isHr) {
+        user.role = 'HR';
+        user.department = empDoc.departmentName || 'Human Resources';
+        user.designation = empDoc.designationName || 'HR';
+      }
+    }
+    await user.save();
+
+    // Generate active JWT token for immediate auto-login session
+    const token = jwt.sign(
+      {
+        id: user._id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    await UserPasswordModel.findOneAndUpdate(
+      { user: user._id },
+      { $push: { loggedSessions: token } }
+    );
 
     return res.status(200).json({
       success: true,
@@ -123,8 +165,12 @@ const register = async (req, res, { userModel }) => {
         email: cleanEmail,
         role: user.role,
         department: user.department,
+        designation: user.designation,
+        employeeId: user.employeeId,
+        photo: user.photo,
+        token: token,
       },
-      message: 'Account created successfully! You can now log in.',
+      message: 'Account created successfully! You are now logged in.',
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -138,3 +184,4 @@ const register = async (req, res, { userModel }) => {
 };
 
 module.exports = register;
+
