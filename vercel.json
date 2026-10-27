@@ -1,50 +1,42 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
-    },
-    "backend": {
-      "root": "backend",
-      "framework": "express",
-      "functions": {
-        "index.js": {
-          "includeFiles": "src/**"
-        }
-      }
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "backend/**"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "/api/index.js"
     },
     {
       "source": "/download/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "/api/index.js"
     },
     {
       "source": "/public/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "/api/index.js"
     },
     {
       "source": "/health",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
