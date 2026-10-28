@@ -18,6 +18,7 @@ const generateEmployeeCode = async () => {
 };
 
 const register = async (req, res, { userModel }) => {
+  let user = null;
   try {
     const UserModel = mongoose.model(userModel);
     const UserPasswordModel = mongoose.model(userModel + 'Password');
@@ -28,7 +29,7 @@ const register = async (req, res, { userModel }) => {
     const schema = Joi.object({
       name: Joi.string().trim().min(2).max(50).required(),
       surname: Joi.string().trim().allow('').max(50),
-      email: Joi.string().email().required(),
+      email: Joi.string().trim().email().required(),
       password: Joi.string().min(6).max(64).required(),
       department: Joi.string().trim().allow('').max(50),
       role: Joi.string().allow(''),
@@ -58,7 +59,6 @@ const register = async (req, res, { userModel }) => {
     const salt = bcrypt.genSaltSync(10);
     const hashedPassword = bcrypt.hashSync(salt + password);
 
-    let user;
     if (existingUser) {
       existingUser.name = name.trim();
       existingUser.surname = surname ? surname.trim() : '';
@@ -173,6 +173,22 @@ const register = async (req, res, { userModel }) => {
       message: 'Account created successfully! Please sign in with your credentials.',
     });
   } catch (error) {
+    if (error.code === 11000) {
+      // Race condition / duplicate key caught at database level
+      if (typeof user !== 'undefined' && user && user._id) {
+        try {
+          const UserModel = mongoose.model(userModel);
+          const UserPasswordModel = mongoose.model(userModel + 'Password');
+          await UserModel.deleteOne({ _id: user._id });
+          await UserPasswordModel.deleteOne({ user: user._id });
+        } catch (cleanupErr) {}
+      }
+      return res.status(409).json({
+        success: false,
+        result: null,
+        message: 'An active account with this email already exists. Please log in.',
+      });
+    }
     console.error('Registration error:', error);
     return res.status(500).json({
       success: false,

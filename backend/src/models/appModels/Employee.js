@@ -58,7 +58,6 @@ const schema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -191,6 +190,17 @@ const schema = new mongoose.Schema(
       accountNumber: { type: String, default: '' },
       routingOrIfsc: { type: String, default: '' },
     },
+    salaryStructure: {
+      basic: { type: Number, default: 0 },
+      hra: { type: Number, default: 0 },
+      allowances: { type: Number, default: 0 },
+      incentives: { type: Number, default: 0 },
+      bonus: { type: Number, default: 0 },
+      deductions: { type: Number, default: 0 },
+      professionalTax: { type: Number, default: 200 },
+      tds: { type: Number, default: 0 },
+      otherDeductions: { type: Number, default: 0 },
+    },
     created: {
       type: Date,
       default: Date.now,
@@ -219,5 +229,9 @@ schema.pre('save', function (next) {
   this.updated = Date.now();
   next();
 });
+
+
+// Partial unique index to allow re-registration of soft-deleted employee emails
+schema.index({ email: 1 }, { unique: true, partialFilterExpression: { removed: false } });
 
 module.exports = mongoose.model('Employee', schema);

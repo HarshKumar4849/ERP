@@ -22,7 +22,7 @@ const schema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['CREATED', 'UPDATED', 'STATUS_CHANGE', 'SLIP_GENERATED', 'SLIP_DOWNLOADED', 'DELETED'],
+    enum: ['CREATED', 'UPDATED', 'STATUS_CHANGE', 'SLIP_GENERATED', 'SLIP_DOWNLOADED', 'DELETED', 'BATCH_GENERATED', 'BATCH_RECALCULATED'],
     required: true,
   },
   performedBy: {

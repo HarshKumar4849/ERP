@@ -359,9 +359,9 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
               <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
                 {formatCurrency(salary.bonus)}
               </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>-</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                ₹0.00
+              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Loss of Pay (LOP) Deduction</td>
+              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500, color: salary.lopDeduction > 0 ? '#cf1322' : 'inherit' }}>
+                {formatCurrency(salary.lopDeduction || 0)}
               </td>
             </tr>
             <tr style={{ background: '#fafafa', borderTop: '2px solid #002244', borderBottom: '2px solid #002244' }}>

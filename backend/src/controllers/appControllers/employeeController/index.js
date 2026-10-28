@@ -25,7 +25,7 @@ const resolveOrCreateEmployee = async (userDoc) => {
     orClauses.push({ employeeId: userEmpId });
   }
 
-  let emp = orClauses.length > 0 ? await Employee.findOne({ $or: orClauses }) : null;
+  let emp = orClauses.length > 0 ? await Employee.findOne({ $or: orClauses, removed: false }) : null;
 
   if (emp) {
     let changed = false;
@@ -179,9 +179,14 @@ const resolveLocation = async (locInput) => {
 // Auto-generate employee ID
 const generateEmployeeId = async () => {
   const Employee = mongoose.model('Employee');
+  for (let attempts = 0; attempts < 30; attempts++) {
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const testId = `TM-${randNum}`;
+    const exists = await Employee.findOne({ employeeId: testId });
+    if (!exists) return testId;
+  }
   const count = await Employee.countDocuments();
-  const nextNum = 1000 + count + 1;
-  return `TM-${nextNum}`;
+  return `TM-${1000 + count + 1}`;
 };
 
 const employeeController = {
@@ -615,13 +620,7 @@ const employeeController = {
     const Employee = mongoose.model('Employee');
     const { id } = req.params;
 
-    const result = await Employee.findByIdAndUpdate(
-      id,
-      { removed: true, enabled: false, updated: Date.now() },
-      { new: true }
-    );
-
-    if (!result) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(404).json({
         success: false,
         result: null,
@@ -629,25 +628,73 @@ const employeeController = {
       });
     }
 
-    // Cascade deactivation to the associated login user account
-    if (result.user) {
+    const emp = await Employee.findById(id);
+    if (!emp) {
+      return res.status(404).json({
+        success: false,
+        result: null,
+        message: 'Employee record not found.',
+      });
+    }
+
+    if (emp.removed) {
+      return res.status(200).json({
+        success: true,
+        result: emp,
+        message: 'Employee record is already marked as removed.',
+      });
+    }
+
+    // Soft delete the employee profile
+    emp.removed = true;
+    emp.enabled = false;
+    emp.status = 'Terminated';
+    emp.exitDate = emp.exitDate || new Date();
+    emp.updated = Date.now();
+    await emp.save();
+
+    // Cascade deactivation & session revocation to associated login accounts
+    try {
       const AdminModel = mongoose.model('Admin');
       const UserPasswordModel = mongoose.model('AdminPassword');
-      await AdminModel.findByIdAndUpdate(result.user, {
-        enabled: false,
-        removed: true,
-        updated: Date.now(),
-      });
-      // Invalidate active login sessions
-      await UserPasswordModel.findOneAndUpdate(
-        { user: result.user },
-        { $set: { loggedSessions: [] } }
-      );
+      const cleanEmail = (emp.email || '').toLowerCase().trim();
+
+      const userConditions = [];
+      if (emp.user) userConditions.push({ _id: emp.user });
+      if (cleanEmail) userConditions.push({ email: cleanEmail });
+      if (emp.employeeId) userConditions.push({ employeeId: emp.employeeId });
+
+      if (userConditions.length > 0) {
+        const matchingUsers = await AdminModel.find({ $or: userConditions });
+        const userIds = matchingUsers.map((u) => u._id);
+
+        if (userIds.length > 0) {
+          await AdminModel.updateMany(
+            { _id: { $in: userIds } },
+            { $set: { enabled: false, removed: true, updated: Date.now() } }
+          );
+
+          await UserPasswordModel.updateMany(
+            { user: { $in: userIds } },
+            {
+              $set: {
+                loggedSessions: [],
+                emailOtp: null,
+                emailOtpExpires: null,
+                resetToken: null,
+                resetTokenExpires: null,
+              },
+            }
+          );
+        }
+      }
+    } catch (authCleanupErr) {
+      console.error('Error cascading employee deletion to authentication accounts:', authCleanupErr);
     }
 
     return res.status(200).json({
       success: true,
-      result,
+      result: emp,
       message: 'Employee record marked as removed successfully.',
     });
   },

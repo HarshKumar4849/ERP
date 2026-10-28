@@ -107,6 +107,19 @@ const schema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    lopDeduction: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    approvedLeaveDays: {
+      type: Number,
+      default: 0,
+    },
+    leaveBalanceSnapshot: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     totalDeductions: {
       type: Number,
       default: 0,
@@ -254,7 +267,8 @@ schema.pre('save', function (next) {
   const ptVal = Number(this.professionalTax || 0);
   const tdsVal = Number(this.tds || 0);
   const otherVal = Number(this.otherDeductions || 0);
-  this.totalDeductions = dedVal + ptVal + tdsVal + otherVal;
+  const lopVal = Number(this.lopDeduction || 0);
+  this.totalDeductions = dedVal + ptVal + tdsVal + otherVal + lopVal;
 
   this.netSalary = Math.max(0, this.totalEarnings - this.totalDeductions);
   this.updated = Date.now();

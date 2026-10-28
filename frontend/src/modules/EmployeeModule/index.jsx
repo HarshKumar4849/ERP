@@ -232,7 +232,7 @@ export default function EmployeeModule() {
         message.error(res.data.message || 'Failed to remove employee');
       }
     } catch (err) {
-      message.error('Error removing employee');
+      message.error(err?.response?.data?.message || 'Error removing employee');
     }
   };
 

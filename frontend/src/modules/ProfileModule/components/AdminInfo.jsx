@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useProfileContext } from '@/context/profileContext';
 import { generate as uniqueId } from 'shortid';
-import { EditOutlined, LockOutlined, LogoutOutlined } from '@ant-design/icons';
+import { EditOutlined, LockOutlined, LogoutOutlined, DollarOutlined } from '@ant-design/icons';
 import { Avatar, Button, Col, Descriptions, Divider, Row } from 'antd';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useSelector } from 'react-redux';
@@ -46,6 +46,14 @@ const AdminInfo = ({ config }) => {
             }}
           >
             {translate('Update Password')}
+          </Button>,
+          <Button
+            key="my-salary-slips"
+            icon={<DollarOutlined />}
+            onClick={() => navigate('/payroll')}
+            style={{ borderColor: '#002244', color: '#002244', fontWeight: 500 }}
+          >
+            {translate('My Salary Slips')}
           </Button>,
         ]}
         style={{

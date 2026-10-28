@@ -306,6 +306,16 @@ if (appControllers['salaryController']) {
     catchErrors(appControllers['salaryController'].audit)
   );
 
+  router.route('/salary/batch-run').post(
+    rbacMiddleware('salary', 'create'),
+    catchErrors(appControllers['salaryController'].batchRun)
+  );
+
+  router.route('/salary/calculate-preview').post(
+    rbacMiddleware('salary', 'read'),
+    catchErrors(appControllers['salaryController'].calculatePreview)
+  );
+
   router.route('/salary/audit').get(
     rbacMiddleware('salary', 'read'),
     catchErrors(appControllers['salaryController'].audit)

@@ -58,4 +58,7 @@ const adminSchema = new Schema({
   },
 });
 
+// Partial unique index to enforce unique email among active accounts and allow re-registration after deletion
+adminSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { removed: false } });
+
 module.exports = mongoose.model('Admin', adminSchema);
