@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const pdf = require('html-pdf');
+const payrollService = require('../../../services/payrollService');
 
 let ROLES, normalizeRole;
 try {
@@ -837,8 +838,8 @@ const downloadSlipPdf = async (req, res) => {
           <tr>
             <td>Bonus & Ex-Gratia</td>
             <td class="amount-col">${formatCurrency(salary.bonus)}</td>
-            <td>-</td>
-            <td class="amount-col">₹0.00</td>
+            <td>Loss of Pay (LOP) Deduction</td>
+            <td class="amount-col">${formatCurrency(salary.lopDeduction || 0)}</td>
           </tr>
           <tr class="total-row">
             <td>GROSS EARNINGS</td>
@@ -1018,7 +1019,125 @@ const deleteItem = async (req, res) => {
   }
 };
 
+
+// =========================================================================
+// 9. BATCH PAYROLL EXECUTION (ADMIN / HR)
+// =========================================================================
+const batchRun = async (req, res) => {
+  try {
+    const user = req.user;
+    const role = normalizeRole(user.role);
+
+    const authorizedRoles = [ROLES.ADMIN, ROLES.HR];
+    if (!authorizedRoles.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: Only HR and Admin can execute batch payroll runs.',
+      });
+    }
+
+    const { year, month, workingDays, forceRecalculate, markPaid, paymentMode } = req.body;
+    if (!year || !month) {
+      return res.status(400).json({
+        success: false,
+        message: 'Year and month are required for batch payroll processing.',
+      });
+    }
+
+    const summary = await payrollService.processMonthlyBatch({
+      year,
+      month,
+      workingDays,
+      createdByUser: user,
+      forceRecalculate: Boolean(forceRecalculate),
+      markPaid: markPaid !== undefined ? Boolean(markPaid) : true,
+      paymentMode: paymentMode || 'Bank Transfer',
+      ipAddress: req.ip || '',
+    });
+
+    return res.status(200).json({
+      success: true,
+      result: summary,
+      message: `Batch payroll completed for ${summary.period}: ${summary.createdCount} created, ${summary.updatedCount} updated, ${summary.skippedCount} skipped.`,
+    });
+  } catch (error) {
+    console.error('Batch run error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =========================================================================
+// 10. REAL-TIME CALCULATION PREVIEW
+// =========================================================================
+const calculatePreview = async (req, res) => {
+  try {
+    const {
+      employee: employeeId,
+      year,
+      month,
+      workingDays,
+      basic,
+      hra,
+      allowances,
+      incentives,
+      bonus,
+      deductions,
+      professionalTax,
+      tds,
+      otherDeductions,
+      lopDays,
+    } = req.body;
+
+    let computed;
+    if (employeeId) {
+      computed = await payrollService.calculateEmployeeSalary({
+        employeeId,
+        year,
+        month,
+        workingDays,
+        manualOverrides: {
+          basic,
+          hra,
+          allowances,
+          incentives,
+          bonus,
+          deductions,
+          professionalTax,
+          tds,
+          otherDeductions,
+          lopDays,
+        },
+        applyLopFromLeaves: lopDays === undefined,
+      });
+    } else {
+      const breakdown = payrollService.calculateSalaryBreakdown({
+        basic,
+        hra,
+        allowances,
+        incentives,
+        bonus,
+        deductions,
+        professionalTax,
+        tds,
+        otherDeductions,
+        workingDays,
+        lopDays: lopDays || 0,
+      });
+      computed = { breakdown };
+    }
+
+    return res.status(200).json({
+      success: true,
+      result: computed,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
+  batchRun,
+  calculatePreview,
   list,
   read,
   create,

@@ -235,6 +235,11 @@ try {
 
   const httpServer = http.listen(app.get('port'), () => {
     console.log(`Server running → HTTP: ${httpServer.address().port}, Socket.IO enabled`);
+    try {
+      require('./services/payrollScheduler').initScheduler();
+    } catch (schedErr) {
+      console.warn('Payroll scheduler initialization notice:', schedErr.message);
+    }
   });
 
   // Mark as initialized so other modules can safely import io

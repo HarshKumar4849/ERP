@@ -191,6 +191,17 @@ const schema = new mongoose.Schema(
       accountNumber: { type: String, default: '' },
       routingOrIfsc: { type: String, default: '' },
     },
+    salaryStructure: {
+      basic: { type: Number, default: 0 },
+      hra: { type: Number, default: 0 },
+      allowances: { type: Number, default: 0 },
+      incentives: { type: Number, default: 0 },
+      bonus: { type: Number, default: 0 },
+      deductions: { type: Number, default: 0 },
+      professionalTax: { type: Number, default: 200 },
+      tds: { type: Number, default: 0 },
+      otherDeductions: { type: Number, default: 0 },
+    },
     created: {
       type: Date,
       default: Date.now,

@@ -85,6 +85,16 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
+  // Batch Payroll State
+  const [batchModalVisible, setBatchModalVisible] = useState(false);
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [batchMonth, setBatchMonth] = useState('October');
+  const [batchYear, setBatchYear] = useState('2026');
+  const [batchWorkingDays, setBatchWorkingDays] = useState(31);
+  const [batchForceRecalculate, setBatchForceRecalculate] = useState(false);
+  const [batchMarkPaid, setBatchMarkPaid] = useState(true);
+  const [batchSummary, setBatchSummary] = useState(null);
+
   const role = normalizeRole(userRole || currentAdmin?.role);
   const isEmployee = role === ROLES.EMPLOYEE;
   const isAuthorized = [ROLES.ADMIN, ROLES.HR].includes(role);
@@ -253,6 +263,41 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
       message.error('Failed to load audit history.');
     } finally {
       setAuditLoading(false);
+    }
+  };
+
+  // Open Batch Modal
+  const handleOpenBatchModal = () => {
+    setBatchSummary(null);
+    setBatchModalVisible(true);
+  };
+
+  // Execute Batch Run
+  const handleExecuteBatch = async () => {
+    try {
+      setBatchSubmitting(true);
+      const res = await request.post({
+        entity: 'salary/batch-run',
+        jsonData: {
+          year: Number(batchYear),
+          month: batchMonth,
+          workingDays: Number(batchWorkingDays),
+          forceRecalculate: batchForceRecalculate,
+          markPaid: batchMarkPaid,
+        },
+      });
+      if (res && res.success) {
+        setBatchSummary(res.result);
+        message.success(res.message || 'Batch payroll completed!');
+        fetchSalaries();
+      } else {
+        message.error(res?.message || 'Failed to process batch payroll');
+      }
+    } catch (err) {
+      console.error('Batch error:', err);
+      message.error('An error occurred during batch payroll execution.');
+    } finally {
+      setBatchSubmitting(false);
     }
   };
 
@@ -928,7 +973,217 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
             )}
           />
         )}
-      </Drawer>
+      
+      {/* Batch Payroll Modal */}
+      <Modal
+        title={
+          <Space>
+            <CalculatorOutlined style={{ color: '#1890ff' }} />
+            <span>Automated Monthly Payroll Execution</span>
+          </Space>
+        }
+        open={batchModalVisible}
+        onCancel={() => setBatchModalVisible(false)}
+        footer={null}
+        width={720}
+        destroyOnClose
+      >
+        <Paragraph type="secondary" style={{ marginBottom: 20 }}>
+          Process monthly compensation for all active employees. Calculates gross earnings, retrieves approved leave records, deducts unpaid leave (Loss of Pay), applies configured statutory taxes, and automatically generates unique salary slips.
+        </Paragraph>
+
+        {!batchSummary ? (
+          <div>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Payroll Month</label>
+                <Select
+                  value={batchMonth}
+                  onChange={(val) => {
+                    setBatchMonth(val);
+                    // auto-adjust days
+                    const daysMap = { February: 28, April: 30, June: 30, September: 30, November: 30 };
+                    setBatchWorkingDays(daysMap[val] || 31);
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m) => (
+                    <Option key={m} value={m}>{m}</Option>
+                  ))}
+                </Select>
+              </Col>
+              <Col span={12}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Payroll Year</label>
+                <Select
+                  value={batchYear}
+                  onChange={(val) => setBatchYear(val)}
+                  style={{ width: '100%' }}
+                >
+                  <Option value="2025">2025</Option>
+                  <Option value="2026">2026</Option>
+                  <Option value="2027">2027</Option>
+                </Select>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col span={12}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Working Days in Month</label>
+                <InputNumber
+                  min={1}
+                  max={31}
+                  value={batchWorkingDays}
+                  onChange={(val) => setBatchWorkingDays(val || 30)}
+                  style={{ width: '100%' }}
+                />
+              </Col>
+              <Col span={12}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Payment Mode</label>
+                <Select defaultValue="Bank Transfer" style={{ width: '100%' }}>
+                  <Option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</Option>
+                  <Option value="Cheque">Corporate Cheque</Option>
+                  <Option value="Cash">Cash</Option>
+                </Select>
+              </Col>
+            </Row>
+
+            <div style={{ marginTop: 20, padding: 12, background: '#f8fbff', border: '1px solid #d6e4ff', borderRadius: 8 }}>
+              <Space direction="vertical" size={8}>
+                <div orientation="horizontal">
+                  <input
+                    type="checkbox"
+                    id="markPaid"
+                    checked={batchMarkPaid}
+                    onChange={(e) => setBatchMarkPaid(e.target.checked)}
+                    style={{ marginRight: 8 }}
+                  />
+                  <label htmlFor="markPaid" style={{ fontWeight: 500, cursor: 'pointer' }}>
+                    Mark processed salary records as <strong>Paid</strong> (Generate Final Official Slips)
+                  </label>
+                </div>
+                <div orientation="horizontal">
+                  <input
+                    type="checkbox"
+                    id="forceRecalc"
+                    checked={batchForceRecalculate}
+                    onChange={(e) => setBatchForceRecalculate(e.target.checked)}
+                    style={{ marginRight: 8 }}
+                  />
+                  <label htmlFor="forceRecalc" style={{ fontWeight: 500, cursor: 'pointer' }}>
+                    Force recalculate existing <strong>Draft</strong> records (Finalized slips are protected)
+                  </label>
+                </div>
+              </Space>
+            </div>
+
+            <div style={{ textAlign: 'right', marginTop: 24 }}>
+              <Space>
+                <Button onClick={() => setBatchModalVisible(false)}>Cancel</Button>
+                <Button
+                  type="primary"
+                  icon={<CalculatorOutlined />}
+                  loading={batchSubmitting}
+                  onClick={handleExecuteBatch}
+                  style={{ backgroundColor: '#002244', borderColor: '#002244', fontWeight: 600 }}
+                >
+                  Process All Active Employees
+                </Button>
+              </Space>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ padding: 16, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8, marginBottom: 16 }}>
+              <Title level={4} style={{ color: '#389e0d', margin: 0 }}>
+                Batch Run Completed for {batchSummary.period}
+              </Title>
+              <Text style={{ fontSize: 13, color: '#595959' }}>
+                All eligible active employees processed with decimal-safe financial calculations and leave deductions.
+              </Text>
+            </div>
+
+            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+              <Col span={6}>
+                <Card size="small" style={{ textAlign: 'center', background: '#f0f5fa' }}>
+                  <Statistic title="Eligible" value={batchSummary.totalEligibleEmployees} />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card size="small" style={{ textAlign: 'center', background: '#f6ffed' }}>
+                  <Statistic title="Created" value={batchSummary.createdCount} valueStyle={{ color: '#389e0d' }} />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card size="small" style={{ textAlign: 'center', background: '#fffbe6' }}>
+                  <Statistic title="Skipped" value={batchSummary.skippedCount} valueStyle={{ color: '#d46b08' }} />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card size="small" style={{ textAlign: 'center', background: '#fff1f0' }}>
+                  <Statistic title="Errors" value={batchSummary.errorCount} valueStyle={{ color: '#cf1322' }} />
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+              <Col span={12}>
+                <div style={{ padding: 12, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                  <Text type="secondary">Total Disbursed Net Payroll</Text>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#002244' }}>
+                    {formatCurrency(batchSummary.totalNetDisbursed)}
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div style={{ padding: 12, border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                  <Text type="secondary">Total Gross Compensation</Text>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#237804' }}>
+                    {formatCurrency(batchSummary.totalGrossDisbursed)}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            <Table
+              size="small"
+              dataSource={batchSummary.details || []}
+              rowKey="employeeId"
+              pagination={{ pageSize: 5 }}
+              columns={[
+                { title: 'Code', dataIndex: 'employeeId', key: 'code', render: (c) => <Tag color="geekblue">{c}</Tag> },
+                { title: 'Employee', dataIndex: 'name', key: 'name', render: (n) => <strong>{n}</strong> },
+                {
+                  title: 'Status',
+                  dataIndex: 'status',
+                  key: 'status',
+                  render: (s) => (
+                    <Tag color={s === 'CREATED' ? 'success' : s === 'UPDATED' ? 'processing' : 'warning'}>
+                      {s}
+                    </Tag>
+                  ),
+                },
+                { title: 'Slip Number', dataIndex: 'slipNumber', key: 'slip', render: (sl) => <span style={{ fontSize: 11 }}>{sl || '-'}</span> },
+                { title: 'Net Pay', dataIndex: 'netSalary', key: 'net', render: (val) => formatCurrency(val) },
+              ]}
+            />
+
+            <div style={{ textAlign: 'right', marginTop: 16 }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setBatchModalVisible(false);
+                  setBatchSummary(null);
+                }}
+                style={{ backgroundColor: '#002244', borderColor: '#002244' }}
+              >
+                Close & View Records
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+</Drawer>
     </div>
   );
 }
