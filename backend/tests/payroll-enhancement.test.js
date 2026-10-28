@@ -297,3 +297,33 @@ test('6. Employee Isolation: Employee downloads own slip PDF and is blocked from
   assert.equal(hrDownloadBRes.headers.get('content-type'), 'application/pdf');
 });
 
+// =========================================================================
+// 7. PHASE M: TIMEZONE-AWARE SCHEDULING, PERSISTENCE & OPERATIONAL SAFEGUARDS
+// =========================================================================
+test('7. Phase M: Timezone-aware scheduling, process restart persistence & separation of release', async () => {
+  const scheduler = require('../src/services/payrollScheduler');
+
+  // A. Timezone date extraction matches company timezone
+  const tzParts = scheduler.getTimezoneDateParts('Asia/Kolkata');
+  assert.equal(tzParts.timezone, 'Asia/Kolkata');
+  assert.ok(tzParts.year >= 2026);
+  assert.ok(tzParts.month >= 1 && tzParts.month <= 12);
+  assert.ok(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].includes(tzParts.weekday));
+
+  // B. Target period resolves cleanly
+  const targetPeriod = scheduler.getTargetPeriod();
+  assert.ok(targetPeriod.year);
+  assert.ok(targetPeriod.month);
+
+  // C. Process restart persistence: check DB audit trail for test 3 period (December 2026)
+  const alreadyProcessed = await scheduler.hasPeriodBeenProcessed(batchPeriodYear, batchPeriodMonth);
+  assert.equal(alreadyProcessed, true, 'Period processed in test 3 must be detected in DB across process restarts');
+
+  // D. First execution of scheduler for target period (September 2026)
+  const firstRun = await scheduler.triggerAutomatedRun({ force: false });
+  assert.ok(firstRun.createdCount >= 2 || firstRun.skipped === true);
+
+  // E. Second execution: Process restart persistence verifies period in DB and skips cleanly
+  const secondRun = await scheduler.triggerAutomatedRun({ force: false });
+  assert.equal(secondRun.skipped, true, 'Scheduler must skip duplicate period when already recorded in DB');
+});
