@@ -36,7 +36,14 @@ if (!process.env.DATABASE) {
   console.error('❌ Error: DATABASE environment variable is not defined.');
   console.error(`Checked: ${envBackendPath}`);
 } else {
-  mongoose.connect(process.env.DATABASE).catch((error) => {
+  mongoose.connect(process.env.DATABASE).then(async () => {
+    try {
+      const ensureIndexes = require('./setup/ensureIndexes');
+      await ensureIndexes();
+    } catch (idxErr) {
+      console.warn('Index sync warning:', idxErr.message);
+    }
+  }).catch((error) => {
     console.error(`1. 🔥 Common Error caused issue → : check your .env file and MongoDB connectivity`);
     console.error(`2. 🚫 Error → : ${error.message}`);
   });

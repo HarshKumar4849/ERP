@@ -58,7 +58,6 @@ const schema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -230,5 +229,9 @@ schema.pre('save', function (next) {
   this.updated = Date.now();
   next();
 });
+
+
+// Partial unique index to allow re-registration of soft-deleted employee emails
+schema.index({ email: 1 }, { unique: true, partialFilterExpression: { removed: false } });
 
 module.exports = mongoose.model('Employee', schema);

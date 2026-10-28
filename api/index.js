@@ -49,6 +49,10 @@ const connectDB = async () => {
   }
   await mongoose.connect(dbUri);
   isConnected = true;
+  try {
+    const ensureIndexes = require('../backend/src/setup/ensureIndexes');
+    await ensureIndexes();
+  } catch (e) {}
 };
 
 // Wrap in serverless request handler
