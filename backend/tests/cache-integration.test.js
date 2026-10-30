@@ -88,13 +88,51 @@ test('Selective Cache HTTP Integration Suite', async (t) => {
     Authorization: `Bearer ${adminToken}`,
   });
 
-  // Test A: Health endpoint reflects Redis status informatively
-  await t.test('A. /api/health reports Redis status without failing when healthy', async () => {
-    const res = await fetch(`http://127.0.0.1:${port}/api/health`);
-    assert.strictEqual(res.status, 200);
-    const body = await res.json();
-    assert.strictEqual(body.status, 'healthy');
-    assert.strictEqual(body.redis, 'connected');
+  // Test A: Health endpoint reflects Redis status informatively across all 4 states
+  await t.test('A. /api/health reports Redis status accurately across connected, disconnected, and disabled', async () => {
+    const origUrl = process.env.REDIS_URL;
+    const origEnabled = process.env.REDIS_ENABLED;
+
+    try {
+      // 1. Connected
+      cacheService._resetForTesting(mockRedisClient);
+      process.env.REDIS_URL = 'rediss://user:pass@staging.upstash.io:6379';
+      process.env.REDIS_ENABLED = 'true';
+      const res1 = await fetch(`http://127.0.0.1:${port}/api/health`);
+      assert.strictEqual(res1.status, 200);
+      const b1 = await res1.json();
+      assert.strictEqual(b1.status, 'healthy');
+      assert.strictEqual(b1.redis, 'connected');
+
+      // 2. Configured but unreachable / disconnected
+      cacheService._resetForTesting(null);
+      const res2 = await fetch(`http://127.0.0.1:${port}/api/health`);
+      assert.strictEqual(res2.status, 200);
+      const b2 = await res2.json();
+      assert.strictEqual(b2.status, 'healthy');
+      assert.strictEqual(b2.redis, 'disconnected');
+
+      // 3. Intentionally disabled via REDIS_ENABLED=false (even with REDIS_URL present)
+      process.env.REDIS_ENABLED = 'false';
+      const res3 = await fetch(`http://127.0.0.1:${port}/api/health`);
+      assert.strictEqual(res3.status, 200);
+      const b3 = await res3.json();
+      assert.strictEqual(b3.status, 'healthy');
+      assert.strictEqual(b3.redis, 'disabled', 'REDIS_ENABLED=false must report disabled, not disconnected');
+
+      // 4. Missing REDIS_URL
+      delete process.env.REDIS_URL;
+      process.env.REDIS_ENABLED = 'true';
+      const res4 = await fetch(`http://127.0.0.1:${port}/api/health`);
+      assert.strictEqual(res4.status, 200);
+      const b4 = await res4.json();
+      assert.strictEqual(b4.status, 'healthy');
+      assert.strictEqual(b4.redis, 'disabled');
+    } finally {
+      if (origUrl !== undefined) process.env.REDIS_URL = origUrl; else delete process.env.REDIS_URL;
+      if (origEnabled !== undefined) process.env.REDIS_ENABLED = origEnabled; else delete process.env.REDIS_ENABLED;
+      cacheService._resetForTesting(mockRedisClient);
+    }
   });
 
   // Test B: Department listAll caching flow (MISS -> HIT -> Invalidation)

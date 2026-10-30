@@ -26,6 +26,11 @@ let client = null;
 let isConnected = false;
 let connectionAttempted = false;
 let overrideEnabled = null;
+let overrideVersionTtl = null;
+
+// Optional in-memory version micro-cache (Option A, disabled by default via 0ms TTL)
+const localVersionCache = new Map();
+const VERSION_CACHE_TTL_MS = parseInt(process.env.REDIS_VERSION_CACHE_TTL_MS || '0', 10);
 
 // Sanitizes Redis URL for secure logging (masks username:password)
 function sanitizeUrl(url) {
@@ -135,10 +140,23 @@ function buildKey({ entity, scope, version = null, orgId = 'org_default' }) {
 async function getVersion(entity, orgId = 'org_default') {
   if (!isReady()) return 1;
   const versionKey = `${REDIS_KEY_PREFIX}:${SCHEMA_VERSION}:${ENVIRONMENT}:${orgId}:${entity}:version`;
+
+  const effectiveTtl = overrideVersionTtl !== null ? overrideVersionTtl : VERSION_CACHE_TTL_MS;
+  if (effectiveTtl > 0) {
+    const cached = localVersionCache.get(versionKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.version;
+    }
+  }
+
   try {
     const val = await client.get(versionKey);
     const parsed = parseInt(val, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    const ver = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    if (effectiveTtl > 0) {
+      localVersionCache.set(versionKey, { version: ver, expiresAt: Date.now() + effectiveTtl });
+    }
+    return ver;
   } catch (err) {
     return 1;
   }
@@ -153,6 +171,10 @@ async function incrementVersion(entity, orgId = 'org_default') {
   const versionKey = `${REDIS_KEY_PREFIX}:${SCHEMA_VERSION}:${ENVIRONMENT}:${orgId}:${entity}:version`;
   try {
     const nextVer = await client.incr(versionKey);
+    const effectiveTtl = overrideVersionTtl !== null ? overrideVersionTtl : VERSION_CACHE_TTL_MS;
+    if (effectiveTtl > 0) {
+      localVersionCache.set(versionKey, { version: nextVer, expiresAt: Date.now() + effectiveTtl });
+    }
     return nextVer;
   } catch (err) {
     console.warn(`[CacheService] Error incrementing version for ${entity}:`, err.message);
@@ -228,7 +250,9 @@ async function disconnect() {
 /**
  * Resets client instance (primarily for automated test harnesses)
  */
-function _resetForTesting(mockClient = null) {
+function _resetForTesting(mockClient = null, options = {}) {
+  localVersionCache.clear();
+  overrideVersionTtl = options.versionTtl !== undefined ? options.versionTtl : null;
   if (mockClient) {
     client = mockClient;
     isConnected = true;

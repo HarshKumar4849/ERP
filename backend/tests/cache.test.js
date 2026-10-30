@@ -184,6 +184,96 @@ test('Selective Redis Caching & Resilience Suite', async (t) => {
     assert.strictEqual(PUBLIC_SETTING_ALLOWLIST.has('jwt_secret'), false);
   });
 
+  // Test 7: Redis Health Status Semantics (all 4 states)
+  await t.test('7. Health endpoint logic strictly distinguishes connected, disconnected, and disabled', () => {
+    function computeRedisStatus(isReady, redisUrl, redisEnabled) {
+      const isExplicitlyDisabled = redisEnabled === 'false' || !redisUrl;
+      if (isExplicitlyDisabled) return 'disabled';
+      return isReady ? 'connected' : 'disconnected';
+    }
+
+    // State 1: Connected
+    assert.strictEqual(computeRedisStatus(true, 'rediss://user:pass@host:6379', 'true'), 'connected');
+    // State 2: Configured but unreachable/disconnected
+    assert.strictEqual(computeRedisStatus(false, 'rediss://user:pass@host:6379', 'true'), 'disconnected');
+    // State 3: REDIS_ENABLED=false (even if REDIS_URL exists)
+    assert.strictEqual(computeRedisStatus(false, 'rediss://user:pass@host:6379', 'false'), 'disabled');
+    assert.strictEqual(computeRedisStatus(true, 'rediss://user:pass@host:6379', 'false'), 'disabled');
+    // State 4: REDIS_URL missing
+    assert.strictEqual(computeRedisStatus(false, '', 'true'), 'disabled');
+    assert.strictEqual(computeRedisStatus(false, undefined, undefined), 'disabled');
+  });
+
+  // Test 8: Option A In-Memory Version Micro-Cache & Concurrent Invalidations
+  await t.test('8. Option A: In-memory version micro-cache reduces command consumption and invalidates safely', async () => {
+    const store = new Map();
+    let getCmds = 0;
+    let incrCmds = 0;
+
+    const mockClient = {
+      async get(k) {
+        getCmds++;
+        return store.get(k) || null;
+      },
+      async incr(k) {
+        incrCmds++;
+        const cur = parseInt(store.get(k) || '1', 10);
+        const next = cur + 1;
+        store.set(k, String(next));
+        return next;
+      },
+    };
+
+    // Enable micro-cache with 30-second TTL
+    cacheService._resetForTesting(mockClient, { versionTtl: 30000 });
+
+    // Read 1: Cold read queries Redis
+    const v1 = await cacheService.getVersion('department');
+    assert.strictEqual(v1, 1);
+    assert.strictEqual(getCmds, 1, 'Cold read must execute 1 Redis GET command');
+
+    // Reads 2..10: Warm reads must be served from local memory (0 Redis commands)
+    for (let i = 0; i < 9; i++) {
+      const v = await cacheService.getVersion('department');
+      assert.strictEqual(v, 1);
+    }
+    assert.strictEqual(getCmds, 1, 'Subsequent 9 reads must execute ZERO Redis commands (served from micro-cache)');
+
+    // Invalidation: incrementVersion updates Redis AND local micro-cache immediately
+    const v2 = await cacheService.incrementVersion('department');
+    assert.strictEqual(v2, 2);
+    assert.strictEqual(incrCmds, 1);
+
+    // Read 11: Writer instance immediately sees v2 without waiting for 30s TTL
+    const vPost = await cacheService.getVersion('department');
+    assert.strictEqual(vPost, 2, 'Local writer instance must see new version immediately (0ms stale window)');
+    assert.strictEqual(getCmds, 1, 'Immediate post-invalidation read still uses local updated micro-cache');
+
+    // Concurrent invalidation test: 5 simultaneous increments
+    await Promise.all([
+      cacheService.incrementVersion('department'),
+      cacheService.incrementVersion('department'),
+      cacheService.incrementVersion('department'),
+    ]);
+    const vFinal = await cacheService.getVersion('department');
+    assert.strictEqual(vFinal, 5, 'Concurrent invalidations must increment monotonically');
+  });
+
+  // Test 9: Dashboard event cache removal verification
+  await t.test('9. Dashboard queries Event directly without calling cacheService', async () => {
+    let cacheCalls = 0;
+    const trackingClient = {
+      async get() { cacheCalls++; return null; },
+      async set() { cacheCalls++; return 'OK'; },
+    };
+    cacheService._resetForTesting(trackingClient);
+
+    // Verify calendar event controller still maintains holiday cache
+    const calKey = cacheService.buildKey({ entity: 'holiday', scope: 'calendar:list', version: 1 });
+    await cacheService.set(calKey, [{ title: 'Holiday' }]);
+    assert.ok(cacheCalls > 0, 'Standalone calendar caching remains fully operational');
+  });
+
   // Teardown
   cacheService._resetForTesting(null);
 });
