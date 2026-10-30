@@ -4,7 +4,6 @@ import {
   Button,
   Space,
   Tag,
-  Divider,
   Typography,
   message,
 } from 'antd';
@@ -15,13 +14,19 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { request } from '@/request';
+import logoIcon from '@/style/images/logo-icon.svg';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function formatCurrency(amount) {
   const val = Number(amount || 0);
-  return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(date) {
+  if (!date) return 'N/A';
+  const d = dayjs(date);
+  return d.isValid() ? d.format('DD/MM/YYYY') : 'N/A';
 }
 
 export default function SalarySlipModal({ visible, onClose, salary }) {
@@ -29,20 +34,48 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
 
   if (!salary) return null;
 
-  const empName = salary.employeeName || (salary.employee ? `${salary.employee.name} ${salary.employee.surname || ''}`.trim() : 'Employee');
-  const empCode = salary.employeeCode || salary.employee?.employeeId || 'TM-EMP-001';
+  // 1. Employee Details
+  const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : 'Employee');
+  const empCode = salary.employeeCode || salary.employee?.employeeId || 'EMP-000';
   const dept = salary.department || salary.employee?.departmentName || 'Engineering';
   const desig = salary.designation || salary.employee?.designationName || 'Specialist';
-  const doj = salary.joiningDate ? dayjs(salary.joiningDate).format('DD MMM YYYY') : '15 Jan 2024';
-  const pan = salary.panNumber || 'ABCDE1234F';
-  const uan = salary.uanNumber || '101234567890';
-  const bankName = salary.bankDetails?.bankName || 'HDFC Bank Ltd.';
-  const accNo = salary.bankDetails?.accountNumber || '50100234567890';
-  const ifsc = salary.bankDetails?.ifscCode || 'HDFC0001234';
+  const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || 'Pune, India';
+  const doj = formatDate(salary.joiningDate || salary.employee?.joiningDate);
 
-  const payDate = salary.paymentDate ? dayjs(salary.paymentDate).format('DD MMMM YYYY') : dayjs().format('DD MMMM YYYY');
+  // 2. Attendance & Leave
+  const workingDays = salary.workingDays !== undefined ? salary.workingDays : 30;
+  const paidDays = salary.paidDays !== undefined ? salary.paidDays : 30;
+  const leaveCount = salary.approvedLeaveDays ?? salary.leaveCount ?? salary.leaveDays ?? 0;
+  const leaveDetails = salary.leaveDetails || (salary.lopDays > 0 ? `${salary.lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL'));
+  const lopDays = salary.lopDays !== undefined ? salary.lopDays : 0;
+  const leaveBalance = salary.leaveBalanceSnapshot?.totalBalance ?? salary.leaveBalance ?? 'NIL';
+
+  // 3. Earnings
+  const basic = salary.basic || salary.basicSalary || 0;
+  const hra = salary.hra || 0;
+  const specialAllowance = salary.specialAllowance !== undefined ? salary.specialAllowance : (salary.allowances || 0);
+  const otherAllowances = salary.otherAllowances !== undefined ? salary.otherAllowances : ((salary.incentives || 0) + (salary.bonus || 0));
+  const totalEarnings = salary.totalEarnings !== undefined ? salary.totalEarnings : (basic + hra + specialAllowance + otherAllowances);
+
+  // 4. Deductions
+  const pt = salary.professionalTax || 0;
+  const pf = salary.deductions || salary.pf || 0;
+  const tds = salary.tds || 0;
+  const lopDed = (salary.lopDeduction || 0) + (salary.otherDeductions || 0);
+  const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed);
+
+  // 5. Net Pay & Words
+  const netSalary = salary.netSalary !== undefined ? salary.netSalary : (totalEarnings - totalDeductions);
+  const rawWords = salary.netSalaryWords || 'Rupees In Words';
+  const netWords = rawWords.replace(/^Rupees\s+/i, '').replace(/\s+Only$/i, '').trim();
+
+  // 6. Meta
+  const monthYearLabel = `[${salary.month} ${salary.year}]`;
   const slipNo = salary.slipNumber || `TM-SLIP-${salary.year}-${salary.month}`;
-  const netWords = salary.netSalaryWords || 'Rupees In Words';
+  const payDate = salary.paymentDate ? dayjs(salary.paymentDate).format('DD MMMM YYYY') : dayjs().format('DD MMMM YYYY');
+  const paymentMode = salary.paymentMode || 'Bank Transfer';
+  const refNo = salary.transactionReference || 'UTR-TM-202610-0981';
+  const status = salary.status || 'PAID';
 
   const handlePrint = () => {
     const printContent = document.getElementById('printable-salary-slip');
@@ -50,34 +83,253 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
-          <title>Payslip - ${empName} - ${salary.month} ${salary.year}</title>
+          <base href="${window.location.origin}/" />
+          <meta charset="utf-8" />
+          <title>Salary Slip - ${empName} - ${salary.month} ${salary.year}</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #262626; margin: 0; padding: 24px; font-size: 12px; }
-            table { width: 100%; border-collapse: collapse; }
-            .header-bar { border-bottom: 2px solid #002244; padding-bottom: 12px; margin-bottom: 16px; }
-            .company-title { font-size: 20px; font-weight: 800; color: #002244; margin: 0; text-transform: uppercase; }
-            .company-sub { font-size: 11px; color: #595959; margin: 4px 0 0 0; }
-            .badge-title { background: #002244; color: #ffffff; padding: 6px; text-align: center; font-weight: 700; margin-bottom: 16px; font-size: 12px; }
-            .info-table td { padding: 5px 8px; vertical-align: top; width: 25%; }
-            .info-label { font-size: 10px; color: #8c8c8c; text-transform: uppercase; }
-            .info-val { font-weight: 600; font-size: 12px; color: #000; }
-            .breakdown-table th { background: #f0f5fa; padding: 8px; text-align: left; border-top: 1px solid #d9d9d9; border-bottom: 1px solid #d9d9d9; font-size: 11px; }
-            .breakdown-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
-            .text-right { text-align: right; }
-            .total-row td { font-weight: 700; background: #fafafa; border-top: 1.5px solid #002244; border-bottom: 1.5px solid #002244; color: #002244; }
-            .net-box { border: 2px solid #002244; background: #f8fbff; padding: 12px 16px; margin: 16px 0; }
-            .net-amount { font-size: 18px; font-weight: 800; color: #002244; }
-            .payment-bar { background: #fafafa; border: 1px solid #e8e8e8; padding: 8px 12px; margin-bottom: 24px; font-size: 11px; }
-            .signatures { margin-top: 40px; }
-            .sig-col { text-align: center; width: 50%; }
-            .sig-line { border-top: 1px dashed #8c8c8c; padding-top: 6px; font-size: 11px; color: #595959; margin: 0 20px; }
-            .note { text-align: center; font-size: 10px; color: #8c8c8c; margin-top: 24px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              color: #0f172a;
+              margin: 0;
+              padding: 24px;
+              font-size: 11.5px;
+              line-height: 1.4;
+              background: #ffffff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 8mm 10mm;
+            }
+            .slip-container {
+              max-width: 780px;
+              margin: 0 auto;
+            }
+            .header-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 12px;
+            }
+            .brand-col {
+              vertical-align: middle;
+            }
+            .company-logo {
+              height: 44px;
+              width: auto;
+              vertical-align: middle;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: 800;
+              color: #1e293b;
+              letter-spacing: -0.5px;
+              line-height: 1.1;
+              margin: 0;
+            }
+            .company-sub {
+              font-size: 13px;
+              font-weight: 600;
+              color: #334155;
+              line-height: 1.2;
+              margin: 2px 0 0 0;
+            }
+            .title-col {
+              text-align: right;
+              vertical-align: middle;
+            }
+            .slip-subtitle {
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              margin-bottom: 4px;
+            }
+            .slip-month {
+              font-size: 24px;
+              font-weight: 800;
+              color: #006884;
+              margin: 0;
+              line-height: 1.1;
+            }
+            .address-banner {
+              background: #006884 !important;
+              padding: 8px 14px;
+              border-radius: 2px;
+              margin-bottom: 20px;
+              color: #ffffff;
+            }
+            .address-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .address-text {
+              color: #ffffff;
+              font-size: 10px;
+              font-weight: 500;
+              line-height: 1.35;
+              text-align: left;
+              vertical-align: middle;
+            }
+            .cin-text {
+              color: #ffffff;
+              font-size: 10.5px;
+              font-weight: 600;
+              text-align: right;
+              vertical-align: middle;
+              white-space: nowrap;
+              padding-left: 12px;
+            }
+            .columns-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            .section-header {
+              color: #006884;
+              font-size: 11.5px;
+              font-weight: 700;
+              letter-spacing: 0.8px;
+              text-transform: uppercase;
+              border-bottom: 1.5px solid #006884;
+              padding-bottom: 6px;
+              margin-bottom: 8px;
+            }
+            .info-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .info-table td {
+              padding: 5px 2px;
+              font-size: 11.5px;
+              border-bottom: 1px solid #f1f5f9;
+            }
+            .info-label {
+              color: #64748b;
+              font-weight: 500;
+              text-align: left;
+              width: 48%;
+            }
+            .info-val {
+              color: #0f172a;
+              font-weight: 700;
+              text-align: right;
+              width: 52%;
+            }
+            .breakdown-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 16px;
+            }
+            .table-box {
+              width: 100%;
+              border-collapse: collapse;
+              border: 1px solid #e2e8f0;
+            }
+            .th-teal {
+              background: #006884 !important;
+              color: #ffffff !important;
+              font-size: 12.5px;
+              font-weight: 700;
+              padding: 8px 14px;
+              text-align: left;
+              letter-spacing: 0.3px;
+            }
+            .table-box td {
+              padding: 7px 14px;
+              font-size: 11.5px;
+              border-bottom: 1px solid #f1f5f9;
+            }
+            .item-label {
+              color: #334155;
+              font-weight: 500;
+              text-align: left;
+            }
+            .item-amount {
+              color: #0f172a;
+              font-weight: 600;
+              text-align: right;
+              white-space: nowrap;
+            }
+            .total-row td {
+              background: #f1f5f9 !important;
+              border-top: 1px solid #e2e8f0;
+              border-bottom: none;
+              padding: 9px 14px;
+            }
+            .total-label {
+              color: #0f172a;
+              font-weight: 700;
+              font-size: 12px;
+              text-align: left;
+            }
+            .total-amount {
+              color: #0f172a;
+              font-weight: 700;
+              font-size: 12px;
+              text-align: right;
+              white-space: nowrap;
+            }
+            .net-box {
+              background: #f0f4f8 !important;
+              border-radius: 4px;
+              padding: 16px 20px;
+              margin-bottom: 16px;
+            }
+            .net-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .net-title {
+              color: #475569;
+              font-size: 12px;
+              font-weight: 600;
+            }
+            .net-words {
+              color: #64748b;
+              font-size: 11.5px;
+              font-weight: 500;
+              margin-top: 4px;
+            }
+            .net-amount {
+              color: #0f172a;
+              font-size: 26px;
+              font-weight: 800;
+              text-align: right;
+              letter-spacing: -0.5px;
+              white-space: nowrap;
+            }
+            .payment-bar {
+              background: #fafafa !important;
+              border: 1px solid #e2e8f0;
+              border-radius: 4px;
+              padding: 7px 12px;
+              margin-bottom: 12px;
+              font-size: 10.5px;
+              color: #475569;
+            }
+            .payment-bar table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .note {
+              text-align: center;
+              font-size: 9.5px;
+              color: #94a3b8;
+              margin-top: 16px;
+              padding-top: 6px;
+            }
           </style>
         </head>
         <body>
-          ${printContent.innerHTML}
+          <div class="slip-container">
+            ${printContent.innerHTML}
+          </div>
         </body>
       </html>
     `);
@@ -86,13 +338,12 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
-    }, 300);
+    }, 350);
   };
 
   const handleDownloadPdf = async () => {
     try {
-      message.loading({ content: 'Generating official PDF salary slip...', key: 'slip-pdf' });
-      // Call backend PDF download endpoint directly
+      message.loading({ content: 'Generating official corporate PDF salary slip...', key: 'slip-pdf' });
       window.open(`/api/salary/slip/pdf/${salary._id}`, '_blank');
       message.success({ content: 'Salary slip PDF opened successfully.', key: 'slip-pdf' });
     } catch (err) {
@@ -104,18 +355,18 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
     <Modal
       title={
         <Space align="center">
-          <SafetyCertificateOutlined style={{ color: '#002244', fontSize: 18 }} />
-          <span style={{ fontWeight: 700, color: '#002244' }}>
+          <SafetyCertificateOutlined style={{ color: '#006884', fontSize: 18 }} />
+          <span style={{ fontWeight: 700, color: '#006884' }}>
             Official Salary Slip — {salary.month} {salary.year}
           </span>
           <Tag color="green" icon={<CheckCircleOutlined />}>
-            {salary.status || 'Paid'}
+            {status}
           </Tag>
         </Space>
       }
       open={visible}
       onCancel={onClose}
-      width={780}
+      width={820}
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
@@ -129,7 +380,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
               type="primary"
               icon={<DownloadOutlined />}
               onClick={handleDownloadPdf}
-              style={{ backgroundColor: '#002244', borderColor: '#002244' }}
+              style={{ backgroundColor: '#006884', borderColor: '#006884' }}
             >
               Download PDF Slip
             </Button>
@@ -142,346 +393,499 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
         id="printable-salary-slip"
         ref={printRef}
         style={{
-          padding: '16px',
+          padding: '16px 20px',
           background: '#ffffff',
-          color: '#262626',
-          fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+          color: '#0f172a',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          fontSize: '11.5px',
+          lineHeight: 1.4,
         }}
       >
-        {/* Header with Exact Requested Branding */}
-        <div
-          className="header-bar"
-          style={{
-            borderBottom: '2.5px solid #002244',
-            paddingBottom: '12px',
-            marginBottom: '16px',
-          }}
-        >
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              <tr>
-                <td>
-                  <h1
-                    className="company-title"
-                    style={{
-                      margin: 0,
-                      fontSize: '20px',
-                      fontWeight: 800,
-                      color: '#002244',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    TECMOTIV SOLUTIONS PVT. LTD.
-                  </h1>
-                  <p
-                    className="company-sub"
-                    style={{
-                      margin: '4px 0 0 0',
-                      fontSize: '11px',
-                      color: '#595959',
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    CIN: U72900KA2024PTC123456 • Silicon Tech Park, Outer Ring Road, Bangalore - 560100<br />
-                    Payroll Desk: payroll@tecmotiv.com • Web: www.tecmotiv.com
-                  </p>
-                </td>
-                <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#002244' }}>
-                    {slipNo}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#8c8c8c' }}>Disbursement Date: {payDate}</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Payslip Month Banner */}
-        <div
-          className="badge-title"
-          style={{
-            background: '#002244',
-            color: '#ffffff',
-            padding: '6px 12px',
-            fontWeight: 700,
-            fontSize: '12px',
-            textAlign: 'center',
-            letterSpacing: '1px',
-            marginBottom: '16px',
-            borderRadius: '4px',
-          }}
-        >
-          PAYSLIP FOR THE MONTH OF {String(salary.month).toUpperCase()} {salary.year}
-        </div>
-
-        {/* Employee Details Grid */}
-        <table
-          className="info-table"
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginBottom: '16px',
-            background: '#fafafa',
-            border: '1px solid #f0f0f0',
-            borderRadius: '6px',
-          }}
-        >
+        {/* ================================================================= */}
+        {/* HEADER: BRANDING (LEFT) & SALARY SLIP [MONTH YYYY] (RIGHT)         */}
+        {/* ================================================================= */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px' }}>
           <tbody>
             <tr>
-              <td style={{ padding: '6px 10px', width: '25%' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Employee Code</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{empCode}</div>
+              <td style={{ verticalAlign: 'middle' }}>
+                <table style={{ borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
+                        <img
+                          src={logoIcon}
+                          alt="Tecmotiv"
+                          style={{ height: '44px', width: 'auto', display: 'block' }}
+                        />
+                      </td>
+                      <td style={{ verticalAlign: 'middle' }}>
+                        <div style={{ fontSize: '24px', fontWeight: 800, color: '#1e293b', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
+                          Tecmotiv
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', lineHeight: 1.2, marginTop: '2px' }}>
+                          Solutions Pvt Ltd
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </td>
-              <td style={{ padding: '6px 10px', width: '25%' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Employee Name</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{empName}</div>
-              </td>
-              <td style={{ padding: '6px 10px', width: '25%' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Designation</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{desig}</div>
-              </td>
-              <td style={{ padding: '6px 10px', width: '25%' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Department</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{dept}</div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Date of Joining</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{doj}</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>PAN Number</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{pan}</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>UAN Number</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{uan}</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Bank Name</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{bankName}</div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Bank A/C No.</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{accNo}</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>IFSC Code</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{ifsc}</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Working Days</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>{salary.workingDays || 30} Days</div>
-              </td>
-              <td style={{ padding: '6px 10px' }}>
-                <div style={{ fontSize: '10px', color: '#8c8c8c', textTransform: 'uppercase' }}>Paid / LOP Days</div>
-                <div style={{ fontWeight: 600, fontSize: '12px', color: '#000' }}>
-                  {salary.paidDays || 30} / {salary.lopDays || 0} Days
+              <td style={{ textAlign: 'right', verticalAlign: 'middle' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  SALARY SLIP
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#006884', lineHeight: 1.1 }}>
+                  {monthYearLabel}
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
 
-        {/* Dual-Column Earnings and Deductions Table */}
-        <table
-          className="breakdown-table"
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            marginBottom: '16px',
-            border: '1px solid #d9d9d9',
-          }}
-        >
-          <thead>
-            <tr style={{ background: '#f0f5fa' }}>
-              <th style={{ padding: '8px 10px', width: '32%', color: '#002244', fontWeight: 700, borderBottom: '1px solid #d9d9d9' }}>
-                EARNINGS
-              </th>
-              <th style={{ padding: '8px 10px', width: '18%', textAlign: 'right', color: '#002244', fontWeight: 700, borderBottom: '1px solid #d9d9d9' }}>
-                AMOUNT (₹)
-              </th>
-              <th style={{ padding: '8px 10px', width: '32%', color: '#002244', fontWeight: 700, borderBottom: '1px solid #d9d9d9' }}>
-                DEDUCTIONS
-              </th>
-              <th style={{ padding: '8px 10px', width: '18%', textAlign: 'right', color: '#002244', fontWeight: 700, borderBottom: '1px solid #d9d9d9' }}>
-                AMOUNT (₹)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Basic Salary</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.basic || salary.basicSalary)}
-              </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Professional Tax (PT)</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.professionalTax)}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>House Rent Allowance (HRA)</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.hra)}
-              </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>TDS / Income Tax</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.tds)}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Special & Other Allowances</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.allowances)}
-              </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Standard Deductions / PF</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.deductions)}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Performance Incentives</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.incentives)}
-              </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Other Deductions / LOP</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.otherDeductions)}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Bonus & Ex-Gratia</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500 }}>
-                {formatCurrency(salary.bonus)}
-              </td>
-              <td style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>Loss of Pay (LOP) Deduction</td>
-              <td style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid #f0f0f0', fontWeight: 500, color: salary.lopDeduction > 0 ? '#cf1322' : 'inherit' }}>
-                {formatCurrency(salary.lopDeduction || 0)}
-              </td>
-            </tr>
-            <tr style={{ background: '#fafafa', borderTop: '2px solid #002244', borderBottom: '2px solid #002244' }}>
-              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#002244' }}>GROSS EARNINGS</td>
-              <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: '#002244' }}>
-                {formatCurrency(salary.totalEarnings)}
-              </td>
-              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#002244' }}>TOTAL DEDUCTIONS</td>
-              <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: '#002244' }}>
-                {formatCurrency(salary.totalDeductions)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Net Salary Highlight Box */}
+        {/* ================================================================= */}
+        {/* SOLID TEAL BANNER: OFFICE ADDRESS & CIN                           */}
+        {/* ================================================================= */}
         <div
-          className="net-box"
           style={{
-            border: '2px solid #002244',
-            background: '#f8fbff',
-            padding: '12px 16px',
-            marginBottom: '16px',
-            borderRadius: '6px',
+            background: '#006884',
+            padding: '8px 14px',
+            borderRadius: '2px',
+            marginBottom: '20px',
+            color: '#ffffff',
           }}
         >
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#595959', textTransform: 'uppercase' }}>
-                    NET SALARY PAYABLE
-                  </span>
-                  <div style={{ fontSize: '11px', color: '#595959', fontStyle: 'italic', marginTop: '2px' }}>
-                    {netWords}
+                <td style={{ color: '#ffffff', fontSize: '10px', fontWeight: 500, lineHeight: 1.35, textAlign: 'left', verticalAlign: 'middle' }}>
+                  <strong>Office Address:</strong> Level-5, Vatika Business Centre Block C, Tech Park One, Loop Rd, Shastrinagar, Yerawada, Pune 411 006, India
+                </td>
+                <td style={{ color: '#ffffff', fontSize: '10.5px', fontWeight: 600, textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap', paddingLeft: '12px' }}>
+                  CIN: U74909PN2023PTC222092
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* ================================================================= */}
+        {/* 2-COLUMN SECTION: EMPLOYEE DETAILS & ATTENDANCE / LEAVE            */}
+        {/* ================================================================= */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              {/* Left Column: EMPLOYEE DETAILS */}
+              <td style={{ width: '48%', verticalAlign: 'top', paddingRight: '12px' }}>
+                <div
+                  style={{
+                    color: '#006884',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.8px',
+                    textTransform: 'uppercase',
+                    borderBottom: '1.5px solid #006884',
+                    paddingBottom: '6px',
+                    marginBottom: '8px',
+                  }}
+                >
+                  EMPLOYEE DETAILS
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500, width: '44%' }}>
+                        Employee Name
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right', width: '56%' }}>
+                        [{empName}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Employee ID
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{empCode}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Department
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{dept}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Designation
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{desig}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Location
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{location}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Date of Joining
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{doj}]
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+
+              {/* Spacer Column */}
+              <td style={{ width: '4%' }}>&nbsp;</td>
+
+              {/* Right Column: ATTENDANCE & LEAVE */}
+              <td style={{ width: '48%', verticalAlign: 'top', paddingLeft: '12px' }}>
+                <div
+                  style={{
+                    color: '#006884',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    letterSpacing: '0.8px',
+                    textTransform: 'uppercase',
+                    borderBottom: '1.5px solid #006884',
+                    paddingBottom: '6px',
+                    marginBottom: '8px',
+                  }}
+                >
+                  ATTENDANCE & LEAVE
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500, width: '56%' }}>
+                        Total Working Days
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right', width: '44%' }}>
+                        [{String(workingDays).padStart(2, '0')}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Days Paid
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{String(paidDays).padStart(2, '0')}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Number of Leaves
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{String(leaveCount).padStart(2, '0')}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Leave Details (if any)
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{leaveDetails}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Loss of Pay Days
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{String(lopDays).padStart(2, '0')}]
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: 500 }}>
+                        Leave Balance
+                      </td>
+                      <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
+                        [{String(leaveBalance).padStart(2, '0')}]
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* ================================================================= */}
+        {/* SIDE-BY-SIDE TABLES: EARNINGS & DEDUCTIONS                        */}
+        {/* ================================================================= */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+          <tbody>
+            <tr>
+              {/* Left Table: Earnings */}
+              <td style={{ width: '48%', verticalAlign: 'top', paddingRight: '10px' }}>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        colSpan={2}
+                        style={{
+                          background: '#006884',
+                          color: '#ffffff',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          padding: '8px 14px',
+                          textAlign: 'left',
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        Earnings
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Basic Salary
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(basic)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        House Rent Allowance
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(hra)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Special Allowance
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(specialAllowance)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Other Allowances
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(otherAllowances)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          background: '#f1f5f9',
+                          borderTop: '1px solid #e2e8f0',
+                          padding: '9px 14px',
+                          color: '#0f172a',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          textAlign: 'left',
+                        }}
+                      >
+                        Total Earnings
+                      </td>
+                      <td
+                        style={{
+                          background: '#f1f5f9',
+                          borderTop: '1px solid #e2e8f0',
+                          padding: '9px 14px',
+                          color: '#0f172a',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          textAlign: 'right',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {formatCurrency(totalEarnings)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+
+              {/* Spacer Column */}
+              <td style={{ width: '4%' }}>&nbsp;</td>
+
+              {/* Right Table: Deductions */}
+              <td style={{ width: '48%', verticalAlign: 'top', paddingLeft: '10px' }}>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        colSpan={2}
+                        style={{
+                          background: '#006884',
+                          color: '#ffffff',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          padding: '8px 14px',
+                          textAlign: 'left',
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        Deductions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Professional Tax
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(pt)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Provident Fund
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(pf)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Income Tax (TDS)
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(tds)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                        Leave Deduction (LOP)
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: lopDed > 0 ? '#cf1322' : '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(lopDed)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          background: '#f1f5f9',
+                          borderTop: '1px solid #e2e8f0',
+                          padding: '9px 14px',
+                          color: '#0f172a',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          textAlign: 'left',
+                        }}
+                      >
+                        Total Deductions
+                      </td>
+                      <td
+                        style={{
+                          background: '#f1f5f9',
+                          borderTop: '1px solid #e2e8f0',
+                          padding: '9px 14px',
+                          color: '#0f172a',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          textAlign: 'right',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {formatCurrency(totalDeductions)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* ================================================================= */}
+        {/* PROMINENT NET PAY CARD (SOFT ICE-BLUE BACKGROUND)                 */}
+        {/* ================================================================= */}
+        <div
+          style={{
+            background: '#f0f4f8',
+            borderRadius: '4px',
+            padding: '16px 20px',
+            marginBottom: '16px',
+          }}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              <tr>
+                <td style={{ textAlign: 'left', verticalAlign: 'middle' }}>
+                  <div style={{ color: '#475569', fontSize: '12px', fontWeight: 600 }}>
+                    Net Pay (Earnings - Deductions)
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginTop: '4px' }}>
+                    In words: [{netWords}] only
                   </div>
                 </td>
                 <td style={{ textAlign: 'right', verticalAlign: 'middle' }}>
-                  <span style={{ fontSize: '20px', fontWeight: 800, color: '#002244' }}>
-                    {formatCurrency(salary.netSalary)}
-                  </span>
+                  <div style={{ color: '#0f172a', fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
+                    {formatCurrency(netSalary)}
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Payment Information */}
+        {/* ================================================================= */}
+        {/* PAYMENT & DISBURSEMENT VERIFICATION SUMMARY                       */}
+        {/* ================================================================= */}
         <div
-          className="payment-bar"
           style={{
             background: '#fafafa',
-            border: '1px solid #e8e8e8',
-            padding: '8px 12px',
-            marginBottom: '24px',
-            borderRadius: '6px',
-            fontSize: '11px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '4px',
+            padding: '7px 12px',
+            marginBottom: '12px',
+            fontSize: '10.5px',
+            color: '#475569',
           }}
         >
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td><strong>Payment Mode:</strong> {salary.paymentMode || 'Bank Transfer'}</td>
-                <td>
-                  <strong>Status:</strong>{' '}
-                  <span style={{ color: '#237804', fontWeight: 700 }}>{salary.status || 'PAID'}</span>
-                </td>
+                <td><strong>Payment Mode:</strong> {paymentMode}</td>
+                <td><strong>Status:</strong> <span style={{ color: '#0d9488', fontWeight: 700 }}>{status}</span></td>
                 <td><strong>Disbursed On:</strong> {payDate}</td>
-                <td><strong>UTR / Ref:</strong> {salary.transactionReference || 'UTR-TM-202610-0981'}</td>
+                <td><strong>UTR / Ref:</strong> {refNo}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Dual Signatures */}
-        <table className="signatures" style={{ width: '100%', marginTop: '36px', borderCollapse: 'collapse' }}>
-          <tbody>
-            <tr>
-              <td className="sig-col" style={{ width: '50%', textAlign: 'center', padding: '0 20px' }}>
-                <div style={{ height: '32px' }}></div>
-                <div
-                  className="sig-line"
-                  style={{
-                    borderTop: '1px dashed #8c8c8c',
-                    paddingTop: '6px',
-                    fontSize: '11px',
-                    color: '#595959',
-                  }}
-                >
-                  Authorized Signatory / Finance Department
-                </div>
-              </td>
-              <td className="sig-col" style={{ width: '50%', textAlign: 'center', padding: '0 20px' }}>
-                <div style={{ height: '32px' }}></div>
-                <div
-                  className="sig-line"
-                  style={{
-                    borderTop: '1px dashed #8c8c8c',
-                    paddingTop: '6px',
-                    fontSize: '11px',
-                    color: '#595959',
-                  }}
-                >
-                  Employee Digital Sign-off & Acknowledgment
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Computerized Note */}
+        {/* ================================================================= */}
+        {/* DIGITAL ACKNOWLEDGMENT & COMPUTERIZED NOTE                         */}
+        {/* ================================================================= */}
         <div
-          className="note"
           style={{
             textAlign: 'center',
-            fontSize: '10px',
-            color: '#8c8c8c',
-            marginTop: '24px',
-            borderTop: '1px solid #f0f0f0',
-            paddingTop: '8px',
+            fontSize: '9.5px',
+            color: '#94a3b8',
+            marginTop: '16px',
+            paddingTop: '6px',
           }}
         >
           This is a computer-generated salary slip from Tecmotiv ERP. No physical signature is required. For inquiries, please contact payroll@tecmotiv.com.
