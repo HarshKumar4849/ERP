@@ -521,6 +521,11 @@ const createEvent = async (req, res) => {
       attendees: Array.isArray(attendees) ? attendees : [],
     }).save();
 
+    try {
+      const cacheService = require('../../../services/cacheService');
+      cacheService.incrementVersion('holiday');
+    } catch (e) {}
+
     return res.status(201).json({
       success: true,
       result: newEvent,
@@ -569,6 +574,11 @@ const updateEvent = async (req, res) => {
     event.updated = Date.now();
     await event.save();
 
+    try {
+      const cacheService = require('../../../services/cacheService');
+      cacheService.incrementVersion('holiday');
+    } catch (e) {}
+
     return res.status(200).json({
       success: true,
       result: event,
@@ -594,6 +604,11 @@ const deleteEvent = async (req, res) => {
     event.removed = true;
     event.updated = Date.now();
     await event.save();
+
+    try {
+      const cacheService = require('../../../services/cacheService');
+      cacheService.incrementVersion('holiday');
+    } catch (e) {}
 
     return res.status(200).json({
       success: true,

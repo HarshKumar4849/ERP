@@ -47,6 +47,11 @@ const updateManySetting = async (req, res) => {
       message: 'No settings found by to update',
     });
   } else {
+    try {
+      const cacheService = require('../../services/cacheService');
+      cacheService.incrementVersion('setting');
+    } catch (e) {}
+
     return res.status(200).json({
       success: true,
       result: [],

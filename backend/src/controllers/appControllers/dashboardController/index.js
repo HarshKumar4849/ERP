@@ -147,10 +147,24 @@ const overview = async (req, res) => {
         .populate('project', 'name code')
         .sort({ dueDate: 1 })
         .lean(),
-      Event.find(eventFilter)
-        .sort({ startDate: 1 })
-        .limit(10)
-        .lean(),
+      (async () => {
+        try {
+          const cacheService = require('../../../services/cacheService');
+          const version = await cacheService.getVersion('holiday');
+          const cacheKey = cacheService.buildKey({
+            entity: 'holiday',
+            scope: `dashboard:${todayStr}`,
+            version,
+          });
+          const cached = await cacheService.get(cacheKey);
+          if (cached) return cached;
+          const events = await Event.find(eventFilter).sort({ startDate: 1 }).limit(10).lean();
+          cacheService.set(cacheKey, events, 1800);
+          return events;
+        } catch (e) {
+          return Event.find(eventFilter).sort({ startDate: 1 }).limit(10).lean();
+        }
+      })(),
       Project.find({ removed: false, status: 'active' })
         .select('name code department startDate endDate status')
         .lean(),

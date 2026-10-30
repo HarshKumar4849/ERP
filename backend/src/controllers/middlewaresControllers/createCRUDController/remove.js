@@ -1,3 +1,5 @@
+const CACHEABLE_MODELS = ['Department', 'Designation', 'Location'];
+
 const remove = async (Model, req, res) => {
   // Find the document by id and delete it
   let updates = {
@@ -21,6 +23,14 @@ const remove = async (Model, req, res) => {
       message: 'No document found ',
     });
   } else {
+    const modelName = Model.modelName;
+    if (CACHEABLE_MODELS.includes(modelName)) {
+      try {
+        const cacheService = require('../../../services/cacheService');
+        cacheService.incrementVersion(modelName.toLowerCase());
+      } catch (e) {}
+    }
+
     return res.status(200).json({
       success: true,
       result,

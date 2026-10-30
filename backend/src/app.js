@@ -142,10 +142,17 @@ app.get(['/health', '/api/health'], async (req, res) => {
       dbStatus = 'connecting-failed';
     }
   }
+  let redisStatus = 'disabled';
+  try {
+    const cacheService = require('./services/cacheService');
+    redisStatus = cacheService.isReady() ? 'connected' : (process.env.REDIS_URL ? 'disconnected' : 'disabled');
+  } catch (e) {}
+
   res.status(200).json({
     status: 'healthy',
     service: 'Tecmotiv-ERP-API',
     database: dbStatus,
+    redis: redisStatus,
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
   });
