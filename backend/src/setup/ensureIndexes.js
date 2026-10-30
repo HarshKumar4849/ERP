@@ -9,11 +9,17 @@ const mongoose = require('mongoose');
  * so that re-registration with the same email succeeds without duplicate key errors,
  * while strictly guaranteeing uniqueness among all active accounts (removed: false).
  */
-const ensureIndexes = async () => {
+let indexesVerified = false;
+
+const ensureIndexes = async (force = false) => {
+  if (indexesVerified && !force) {
+    return;
+  }
   try {
     if (mongoose.connection.readyState !== 1) {
       return;
     }
+    indexesVerified = true;
 
     const empColl = mongoose.connection.collection('employees');
     const adminColl = mongoose.connection.collection('admins');

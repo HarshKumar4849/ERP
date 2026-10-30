@@ -93,12 +93,86 @@ const overview = async (req, res) => {
     }
 
     // =========================================================================
-    // 2. EMPLOYEES & WORKFORCE METRICS
+    // 2. PREPARE FILTERS FOR CONCURRENT DATABASE EXECUTION
     // =========================================================================
-    const allEmployees = await Employee.find(empFilter)
-      .select('employeeId name surname photo email departmentName designationName birthDate joiningDate status')
-      .lean();
+    const attendanceFilter = { dateString: todayStr, removed: false };
+    if (userRole === ROLES.DEPARTMENT_HEAD && userDept) {
+      attendanceFilter.department = new RegExp(`^${userDept}$`, 'i');
+    }
 
+    const leaveFilter = {
+      removed: false,
+      status: { $in: ['Approved', 'approved'] },
+      fromDate: { $lte: endOfToday },
+      toDate: { $gte: startOfToday },
+    };
+    if (userRole === ROLES.DEPARTMENT_HEAD && userDept) {
+      leaveFilter.department = new RegExp(`^${userDept}$`, 'i');
+    }
+
+    const eventFilter = {
+      removed: false,
+      startDate: { $gte: startOfToday, $lte: in30Days },
+    };
+
+    const upcomingLeavesFilter = {
+      removed: false,
+      status: { $in: ['Approved', 'approved'] },
+      fromDate: { $gt: endOfToday, $lte: in14Days },
+    };
+
+    // Parallel execution of all 9 independent queries via Promise.all (Step 5 Optimization)
+    const [
+      allEmployees,
+      todayAttendanceRecords,
+      todayApprovedLeaves,
+      allScopedTasks,
+      upcomingEventsList,
+      activeProjects,
+      upcomingLeaves,
+      announcements,
+      policies,
+    ] = await Promise.all([
+      Employee.find(empFilter)
+        .select('employeeId name surname photo email departmentName designationName birthDate joiningDate status')
+        .lean(),
+      Attendance.find(attendanceFilter)
+        .populate('employee', 'employeeId name surname photo departmentName designationName')
+        .lean(),
+      Leave.find(leaveFilter)
+        .populate('employee', 'employeeId name surname photo departmentName designationName')
+        .lean(),
+      Task.find(taskFilter)
+        .populate('owner', 'employeeId name surname photo departmentName')
+        .populate('project', 'name code')
+        .sort({ dueDate: 1 })
+        .lean(),
+      Event.find(eventFilter)
+        .sort({ startDate: 1 })
+        .limit(10)
+        .lean(),
+      Project.find({ removed: false, status: 'active' })
+        .select('name code department startDate endDate status')
+        .lean(),
+      Leave.find(upcomingLeavesFilter)
+        .populate('employee', 'employeeId name surname photo departmentName')
+        .sort({ fromDate: 1 })
+        .limit(6)
+        .lean(),
+      Announcement.find({ removed: false })
+        .sort({ pinned: -1, date: -1 })
+        .limit(8)
+        .lean(),
+      Policy.find({ removed: false })
+        .select('title category version effectiveDate isMandatory file')
+        .sort({ effectiveDate: -1 })
+        .limit(6)
+        .lean(),
+    ]);
+
+    // =========================================================================
+    // 3. WORKFORCE METRICS PROCESSING
+    // =========================================================================
     const totalEmployees = allEmployees.length;
 
     // New Joiners (joined in last 60 days)
@@ -142,17 +216,8 @@ const overview = async (req, res) => {
       .sort((a, b) => a.anniversaryDay - b.anniversaryDay);
 
     // =========================================================================
-    // 3. TODAY'S ATTENDANCE & LEAVE
+    // 4. TODAY'S ATTENDANCE & LEAVE PROCESSING
     // =========================================================================
-    const attendanceFilter = { dateString: todayStr, removed: false };
-    if (userRole === ROLES.DEPARTMENT_HEAD && userDept) {
-      attendanceFilter.department = new RegExp(`^${userDept}$`, 'i');
-    }
-
-    const todayAttendanceRecords = await Attendance.find(attendanceFilter)
-      .populate('employee', 'employeeId name surname photo departmentName designationName')
-      .lean();
-
     const presentEmployees = todayAttendanceRecords.filter(
       (a) => a.status === 'Present' || a.status === 'Half Day' || (a.workMode && a.workMode !== 'Leave')
     );
@@ -160,21 +225,6 @@ const overview = async (req, res) => {
     const attendanceOnLeave = todayAttendanceRecords.filter(
       (a) => a.status === 'Leave' || a.workMode === 'Leave'
     );
-
-    // Active approved leaves today
-    const leaveFilter = {
-      removed: false,
-      status: { $in: ['Approved', 'approved'] },
-      fromDate: { $lte: endOfToday },
-      toDate: { $gte: startOfToday },
-    };
-    if (userRole === ROLES.DEPARTMENT_HEAD && userDept) {
-      leaveFilter.department = new RegExp(`^${userDept}$`, 'i');
-    }
-
-    const todayApprovedLeaves = await Leave.find(leaveFilter)
-      .populate('employee', 'employeeId name surname photo departmentName designationName')
-      .lean();
 
     // Deduplicate on leave
     const onLeaveEmployeeIds = new Set([
@@ -187,14 +237,8 @@ const overview = async (req, res) => {
     const absentCount = Math.max(0, totalEmployees - (presentTodayCount + onLeaveCount));
 
     // =========================================================================
-    // 4. TASKS BREAKDOWN (COMPANY & USER SCOPED)
+    // 5. TASKS BREAKDOWN PROCESSING
     // =========================================================================
-    const allScopedTasks = await Task.find(taskFilter)
-      .populate('owner', 'employeeId name surname photo departmentName')
-      .populate('project', 'name code')
-      .sort({ dueDate: 1 })
-      .lean();
-
     let openTasksCount = 0;
     let overdueTasksCount = 0;
     let myTodayTasks = [];
@@ -238,18 +282,8 @@ const overview = async (req, res) => {
     });
 
     // =========================================================================
-    // 5. EVENTS, MEETINGS & MILESTONES
+    // 6. EVENTS, MEETINGS & MILESTONES PROCESSING
     // =========================================================================
-    const eventFilter = {
-      removed: false,
-      startDate: { $gte: startOfToday, $lte: in30Days },
-    };
-
-    const upcomingEventsList = await Event.find(eventFilter)
-      .sort({ startDate: 1 })
-      .limit(10)
-      .lean();
-
     const todayMeetings = upcomingEventsList.filter((e) => {
       const eTime = new Date(e.startDate).getTime();
       return (
@@ -267,36 +301,6 @@ const overview = async (req, res) => {
         eTime <= endOfToday.getTime()
       );
     });
-
-    // Upcoming project milestones
-    const activeProjects = await Project.find({ removed: false, status: 'active' })
-      .select('name code department startDate endDate status')
-      .lean();
-
-    // Upcoming approved leaves in next 14 days
-    const upcomingLeaves = await Leave.find({
-      removed: false,
-      status: { $in: ['Approved', 'approved'] },
-      fromDate: { $gt: endOfToday, $lte: in14Days },
-    })
-      .populate('employee', 'employeeId name surname photo departmentName')
-      .sort({ fromDate: 1 })
-      .limit(6)
-      .lean();
-
-    // =========================================================================
-    // 6. COMPANY UPDATES (ANNOUNCEMENTS, POLICIES, NOTICES)
-    // =========================================================================
-    const announcements = await Announcement.find({ removed: false })
-      .sort({ pinned: -1, date: -1 })
-      .limit(8)
-      .lean();
-
-    const policies = await Policy.find({ removed: false })
-      .select('title category version effectiveDate isMandatory file')
-      .sort({ effectiveDate: -1 })
-      .limit(6)
-      .lean();
 
     const newsList = announcements.filter((a) => a.category === 'News');
     const importantNotices = announcements.filter(

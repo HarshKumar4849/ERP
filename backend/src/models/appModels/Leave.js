@@ -180,6 +180,7 @@ const schema = new mongoose.Schema(
 // Compound indexing for overlap checks and performance
 schema.index({ employee: 1, fromDate: 1, toDate: 1, removed: 1 });
 schema.index({ department: 1, status: 1 });
+schema.index({ employee: 1, status: 1, removed: 1 });
 
 schema.pre('save', function (next) {
   if (this.fromDate && !this.startDate) this.startDate = this.fromDate;

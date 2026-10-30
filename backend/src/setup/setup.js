@@ -88,6 +88,14 @@ async function setupApp() {
       console.log('ℹ️ Settings already exist : Skipped duplicate insertion.');
     }
 
+    try {
+      const ensureIndexes = require('./ensureIndexes');
+      await ensureIndexes(true);
+      console.log('👍 Database indexes verified : Done!');
+    } catch (idxErr) {
+      console.warn('⚠️ Index sync warning during setup:', idxErr.message);
+    }
+
     console.log('🥳 Setup completed : Success!');
     process.exit(0);
   } catch (e) {

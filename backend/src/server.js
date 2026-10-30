@@ -32,31 +32,30 @@ process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
 });
 
+const { connectDb } = require('./database');
+
 if (!process.env.DATABASE) {
   console.error('❌ Error: DATABASE environment variable is not defined.');
   console.error(`Checked: ${envBackendPath}`);
 } else {
-  mongoose.connect(process.env.DATABASE).then(async () => {
-    try {
-      const ensureIndexes = require('./setup/ensureIndexes');
-      await ensureIndexes();
-    } catch (idxErr) {
-      console.warn('Index sync warning:', idxErr.message);
-    }
-  }).catch((error) => {
-    console.error(`1. 🔥 Common Error caused issue → : check your .env file and MongoDB connectivity`);
-    console.error(`2. 🚫 Error → : ${error.message}`);
-  });
+  connectDb()
+    .then(() => {
+      setImmediate(async () => {
+        try {
+          const ensureIndexes = require('./setup/ensureIndexes');
+          await ensureIndexes();
+        } catch (idxErr) {
+          console.warn('Index sync warning:', idxErr.message);
+        }
+      });
+    })
+    .catch((error) => {
+      console.error(`1. 🔥 Common Error caused issue → : check your .env file and MongoDB connectivity`);
+      console.error(`2. 🚫 Error → : ${error.message}`);
+    });
 }
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-mongoose.connection.on('error', (error) => {
-  console.log(
-    `1. 🔥 Common Error caused issue → : check your .env file first and add your mongodb url`
-  );
-  console.error(`2. 🚫 Error → : ${error.message}`);
-});
 
 const modelsFiles = globSync(path.resolve(__dirname, 'models/**/*.js').replace(/\\/g, '/'));
 
@@ -249,16 +248,21 @@ try {
     }
   });
 
+  const { registerShutdownHandlers, gracefulShutdown } = require('./shutdown');
+  registerShutdownHandlers(httpServer, io);
+
   // Mark as initialized so other modules can safely import io
   isInitialized = true;
 
-  // Export io for use in other modules
-  module.exports = { app, server: httpServer, io };
+  // Export io and shutdown handlers for use in other modules
+  module.exports = { app, server: httpServer, io, gracefulShutdown };
 } catch (ioError) {
   console.error('Failed to initialize Socket.IO:', ioError.message);
   const server = app.listen(app.get('port'), () => {
     console.log(`Express running → On PORT : ${app.get('port')} (Socket.IO disabled)`);
   });
+  const { registerShutdownHandlers, gracefulShutdown } = require('./shutdown');
+  registerShutdownHandlers(server, null);
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`❌ Port ${app.get('port')} is already in use by another process.`);
@@ -268,5 +272,5 @@ try {
     }
     process.exit(1);
   });
-  module.exports = { app, server };
+  module.exports = { app, server, gracefulShutdown };
 }

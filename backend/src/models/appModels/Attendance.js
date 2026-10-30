@@ -115,6 +115,7 @@ const schema = new mongoose.Schema(
 // Compound index for querying an employee's attendance by date
 schema.index({ employee: 1, dateString: 1, removed: 1 }, { unique: true });
 schema.index({ date: -1, department: 1 });
+schema.index({ employee: 1, date: -1, removed: 1 });
 
 // Normalize and sync aliases
 schema.pre('save', function (next) {

@@ -244,8 +244,9 @@ const schema = new mongoose.Schema(
   }
 );
 
-// Compound index to quickly find salary by employee and period
-schema.index({ employee: 1, year: 1, month: 1 });
+// Compound index to quickly find salary by employee and period (includes soft-deletion flag)
+// Note: Covers { employee, year, month } queries as a left-prefix while providing index-level filtering on removed: false.
+schema.index({ employee: 1, year: 1, month: 1, removed: 1 });
 
 // Pre-save recalculation
 schema.pre('save', function (next) {

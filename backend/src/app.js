@@ -22,6 +22,9 @@ const fileUpload = require('express-fileupload');
 // create our Express app
 const app = express();
 
+const { trackRequests } = require('./shutdown');
+app.use(trackRequests);
+
 const defaultLocalOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -72,47 +75,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database connection middleware for serverless / pooled environments
-let isConnecting = null;
+const { connectDb } = require('./database');
+
+// Database connection middleware with centralized connection pool
 const ensureDbConnection = async (req, res, next) => {
   if (mongoose.connection.readyState === 1) {
     return next();
   }
 
-  if (mongoose.connection.readyState === 2 && isConnecting) {
-    try {
-      await isConnecting;
-      return next();
-    } catch (err) {
-      return next(err);
-    }
-  }
-
-  const dbUri = process.env.DATABASE;
-  if (!dbUri) {
-    console.warn('⚠️ DATABASE connection string is not set in environment variables');
-    return next();
-  }
-
   try {
-    isConnecting = mongoose.connect(dbUri, {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-      socketTimeoutMS: 45000,
-      family: 4,
-    });
-    await isConnecting;
-    isConnecting = null;
+    await connectDb();
     next();
   } catch (err) {
-    isConnecting = null;
     console.error('❌ Database connection error:', err.message);
-    res.status(500).json({
+    res.status(503).json({
       success: false,
       result: null,
-      message: 'Database connection failed: ' + err.message,
+      message: 'Database service temporarily unavailable. Please retry shortly.',
     });
   }
 };
@@ -137,17 +116,27 @@ const githubController = require('./controllers/appControllers/githubController'
 app.post('/api/github/webhook', githubController.handleWebhook);
 
 // Health check for load balancers, Vercel proxy, and uptime monitors
+// Lightweight API performance response-time header (Step 7)
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  const originalSend = res.send;
+  res.send = function (...args) {
+    const diff = process.hrtime(start);
+    const timeMs = (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(2);
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Time', `${timeMs}ms`);
+    }
+    return originalSend.apply(this, args);
+  };
+  next();
+});
+
+// Health check for load balancers, Vercel proxy, and uptime monitors
 app.get(['/health', '/api/health'], async (req, res) => {
   let dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   if (mongoose.connection.readyState === 0 && process.env.DATABASE) {
     try {
-      await mongoose.connect(process.env.DATABASE, {
-        bufferCommands: false,
-        serverSelectionTimeoutMS: 5000,
-        maxPoolSize: 10,
-        minPoolSize: 1,
-        family: 4,
-      });
+      await connectDb();
       dbStatus = 'connected';
     } catch (e) {
       dbStatus = 'connecting-failed';
