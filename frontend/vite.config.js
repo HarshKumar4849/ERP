@@ -30,7 +30,24 @@ export default ({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 2500,
+      chunkSizeWarningLimit: 1600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) {
+                return 'vendor-antd';
+              }
+              if (id.includes('@reduxjs') || id.includes('redux')) {
+                return 'vendor-redux';
+              }
+              if (id.includes('dayjs') || id.includes('axios') || id.includes('currency.js')) {
+                return 'vendor-utils';
+              }
+            }
+          },
+        },
+      },
     },
   };
   return defineConfig(config);

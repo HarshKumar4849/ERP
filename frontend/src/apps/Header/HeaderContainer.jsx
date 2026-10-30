@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, Dropdown, Layout, Tag, Space, Badge, Button, Tooltip } from 'antd';
@@ -17,7 +17,7 @@ import { FILE_BASE_URL } from '@/config/serverApiConfig';
 import useLanguage from '@/locale/useLanguage';
 import { canAccessModule, normalizeRole, ROLES } from '@/utils/rbac';
 import { request } from '@/request';
-import { NotificationCenterDrawer } from '@/modules/NotificationModule';
+const NotificationCenterDrawer = lazy(() => import('@/modules/NotificationModule').then((m) => ({ default: m.NotificationCenterDrawer })));
 import { useAppContext } from '@/context/appContext';
 import useResponsive from '@/hooks/useResponsive';
 import logoIcon from '@/style/images/logo-icon.svg';
@@ -278,11 +278,15 @@ export default function HeaderContent() {
       </div>
 
       {/* Notification Center Slide-Out Drawer */}
-      <NotificationCenterDrawer
-        visible={isNotificationDrawerOpen}
-        onClose={() => setIsNotificationDrawerOpen(false)}
-        onRefreshCount={setUnreadCount}
-      />
+      {isNotificationDrawerOpen && (
+        <Suspense fallback={null}>
+          <NotificationCenterDrawer
+            visible={isNotificationDrawerOpen}
+            onClose={() => setIsNotificationDrawerOpen(false)}
+            onRefreshCount={setUnreadCount}
+          />
+        </Suspense>
+      )}
     </Header>
   );
 }
