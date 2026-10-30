@@ -24,9 +24,31 @@ function formatCurrency(amount) {
 }
 
 function formatDate(date) {
-  if (!date) return 'N/A';
+  if (!date) return '—';
   const d = dayjs(date);
-  return d.isValid() ? d.format('DD/MM/YYYY') : 'N/A';
+  return d.isValid() ? d.format('DD/MM/YYYY') : '—';
+}
+
+function calculateLeaveBalanceTotal(snapshot, fallback) {
+  if (snapshot && typeof snapshot === 'object') {
+    if (typeof snapshot.totalBalance === 'number') {
+      return snapshot.totalBalance;
+    }
+    let total = 0;
+    let found = false;
+    for (const key of Object.keys(snapshot)) {
+      const item = snapshot[key];
+      if (item && typeof item === 'object' && typeof item.allocated === 'number') {
+        found = true;
+        total += Math.max(0, (item.allocated || 0) - (item.used || 0));
+      }
+    }
+    if (found) return total;
+  }
+  if (fallback !== undefined && fallback !== null && !isNaN(Number(fallback))) {
+    return Number(fallback);
+  }
+  return '—';
 }
 
 export default function SalarySlipModal({ visible, onClose, salary }) {
@@ -34,21 +56,21 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
 
   if (!salary) return null;
 
-  // 1. Employee Details
-  const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : 'Employee');
-  const empCode = salary.employeeCode || salary.employee?.employeeId || 'EMP-000';
-  const dept = salary.department || salary.employee?.departmentName || 'Engineering';
-  const desig = salary.designation || salary.employee?.designationName || 'Specialist';
-  const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || 'Pune, India';
+  // 1. Employee Details (Strict Dynamic Mapping & Safe Muted Fallbacks)
+  const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : '') || '—';
+  const empCode = salary.employeeCode || salary.employee?.employeeId || '—';
+  const dept = salary.department || salary.employee?.departmentName || '—';
+  const desig = salary.designation || salary.employee?.designationName || '—';
+  const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || '—';
   const doj = formatDate(salary.joiningDate || salary.employee?.joiningDate);
 
   // 2. Attendance & Leave
-  const workingDays = salary.workingDays !== undefined ? salary.workingDays : 30;
-  const paidDays = salary.paidDays !== undefined ? salary.paidDays : 30;
+  const workingDays = salary.workingDays !== undefined ? salary.workingDays : '—';
+  const paidDays = salary.paidDays !== undefined ? salary.paidDays : (typeof workingDays === 'number' ? workingDays : '—');
   const leaveCount = salary.approvedLeaveDays ?? salary.leaveCount ?? salary.leaveDays ?? 0;
-  const leaveDetails = salary.leaveDetails || (salary.lopDays > 0 ? `${salary.lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL'));
   const lopDays = salary.lopDays !== undefined ? salary.lopDays : 0;
-  const leaveBalance = salary.leaveBalanceSnapshot?.totalBalance ?? salary.leaveBalance ?? 'NIL';
+  const leaveDetails = salary.leaveDetails || (lopDays > 0 && leaveCount > 0 ? `${leaveCount} Days Approved / ${lopDays} Days LOP` : (lopDays > 0 ? `${lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL')));
+  const leaveBalance = calculateLeaveBalanceTotal(salary.leaveBalanceSnapshot, salary.leaveBalance);
 
   // 3. Earnings
   const basic = salary.basic || salary.basicSalary || 0;
@@ -61,8 +83,9 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
   const pt = salary.professionalTax || 0;
   const pf = salary.deductions || salary.pf || 0;
   const tds = salary.tds || 0;
-  const lopDed = (salary.lopDeduction || 0) + (salary.otherDeductions || 0);
-  const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed);
+  const lopDed = salary.lopDeduction || 0;
+  const otherDed = salary.otherDeductions || 0;
+  const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed + otherDed);
 
   // 5. Net Pay & Words
   const netSalary = salary.netSalary !== undefined ? salary.netSalary : (totalEarnings - totalDeductions);
@@ -72,10 +95,18 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
   // 6. Meta
   const monthYearLabel = `[${salary.month} ${salary.year}]`;
   const slipNo = salary.slipNumber || `TM-SLIP-${salary.year}-${salary.month}`;
-  const payDate = salary.paymentDate ? dayjs(salary.paymentDate).format('DD MMMM YYYY') : dayjs().format('DD MMMM YYYY');
+  const isPaid = String(salary.status || '').toLowerCase() === 'paid';
+  const isPending = String(salary.status || '').toLowerCase() === 'pending';
+  const status = salary.status || 'Draft';
+  const statusColor = isPaid ? 'green' : (isPending ? 'orange' : 'default');
+  let payDate = 'Pending Disbursement';
+  if (salary.paymentDate) {
+    payDate = dayjs(salary.paymentDate).format('DD MMMM YYYY');
+  } else if (isPaid) {
+    payDate = 'Disbursed';
+  }
   const paymentMode = salary.paymentMode || 'Bank Transfer';
-  const refNo = salary.transactionReference || 'UTR-TM-202610-0981';
-  const status = salary.status || 'PAID';
+  const refNo = salary.transactionReference || (isPaid ? 'N/A' : 'Pending Disbursement');
 
   const handlePrint = () => {
     const printContent = document.getElementById('printable-salary-slip');
@@ -359,7 +390,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
           <span style={{ fontWeight: 700, color: '#006884' }}>
             Official Salary Slip — {salary.month} {salary.year}
           </span>
-          <Tag color="green" icon={<CheckCircleOutlined />}>
+          <Tag color={statusColor} icon={isPaid ? <CheckCircleOutlined /> : undefined}>
             {status}
           </Tag>
         </Space>
@@ -497,7 +528,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Employee Name
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right', width: '56%' }}>
-                        [{empName}]
+                        {empName}
                       </td>
                     </tr>
                     <tr>
@@ -505,7 +536,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Employee ID
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{empCode}]
+                        {empCode}
                       </td>
                     </tr>
                     <tr>
@@ -513,7 +544,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Department
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{dept}]
+                        {dept}
                       </td>
                     </tr>
                     <tr>
@@ -521,7 +552,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Designation
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{desig}]
+                        {desig}
                       </td>
                     </tr>
                     <tr>
@@ -529,7 +560,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Location
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{location}]
+                        {location}
                       </td>
                     </tr>
                     <tr>
@@ -537,7 +568,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Date of Joining
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{doj}]
+                        {doj}
                       </td>
                     </tr>
                   </tbody>
@@ -570,7 +601,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Total Working Days
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right', width: '44%' }}>
-                        [{String(workingDays).padStart(2, '0')}]
+                        {typeof workingDays === 'number' ? String(workingDays).padStart(2, '0') : workingDays}
                       </td>
                     </tr>
                     <tr>
@@ -578,7 +609,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Days Paid
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{String(paidDays).padStart(2, '0')}]
+                        {typeof paidDays === 'number' ? String(paidDays).padStart(2, '0') : paidDays}
                       </td>
                     </tr>
                     <tr>
@@ -586,7 +617,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Number of Leaves
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{String(leaveCount).padStart(2, '0')}]
+                        {typeof leaveCount === 'number' ? String(leaveCount).padStart(2, '0') : leaveCount}
                       </td>
                     </tr>
                     <tr>
@@ -594,7 +625,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Leave Details (if any)
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{leaveDetails}]
+                        {leaveDetails}
                       </td>
                     </tr>
                     <tr>
@@ -602,7 +633,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Loss of Pay Days
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{String(lopDays).padStart(2, '0')}]
+                        {typeof lopDays === 'number' ? String(lopDays).padStart(2, '0') : lopDays}
                       </td>
                     </tr>
                     <tr>
@@ -610,7 +641,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         Leave Balance
                       </td>
                       <td style={{ padding: '5px 2px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>
-                        [{String(leaveBalance).padStart(2, '0')}]
+                        {typeof leaveBalance === 'number' ? String(leaveBalance).padStart(2, '0') : leaveBalance}
                       </td>
                     </tr>
                   </tbody>
@@ -774,14 +805,35 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                         {formatCurrency(tds)}
                       </td>
                     </tr>
-                    <tr>
-                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
-                        Leave Deduction (LOP)
-                      </td>
-                      <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: lopDed > 0 ? '#cf1322' : '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {formatCurrency(lopDed)}
-                      </td>
-                    </tr>
+                    {otherDed > 0 && lopDed > 0 ? (
+                      <>
+                        <tr>
+                          <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                            Leave Deduction (LOP)
+                          </td>
+                          <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#cf1322', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {formatCurrency(lopDed)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                            Other Deductions
+                          </td>
+                          <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#cf1322', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {formatCurrency(otherDed)}
+                          </td>
+                        </tr>
+                      </>
+                    ) : (
+                      <tr>
+                        <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: '#334155', fontWeight: 500 }}>
+                          {otherDed > 0 && lopDed === 0 ? 'Other Deductions' : 'Leave Deduction (LOP)'}
+                        </td>
+                        <td style={{ padding: '7px 14px', fontSize: '11.5px', borderBottom: '1px solid #f1f5f9', color: (lopDed > 0 || otherDed > 0) ? '#cf1322' : '#0f172a', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {formatCurrency(lopDed > 0 ? lopDed : otherDed)}
+                        </td>
+                      </tr>
+                    )}
                     <tr>
                       <td
                         style={{
@@ -837,7 +889,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
                     Net Pay (Earnings - Deductions)
                   </div>
                   <div style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginTop: '4px' }}>
-                    In words: [{netWords}] only
+                    In words: {netWords} only
                   </div>
                 </td>
                 <td style={{ textAlign: 'right', verticalAlign: 'middle' }}>
@@ -868,7 +920,7 @@ export default function SalarySlipModal({ visible, onClose, salary }) {
             <tbody>
               <tr>
                 <td><strong>Payment Mode:</strong> {paymentMode}</td>
-                <td><strong>Status:</strong> <span style={{ color: '#0d9488', fontWeight: 700 }}>{status}</span></td>
+                <td><strong>Status:</strong> <span style={{ color: isPaid ? '#0d9488' : '#d97706', fontWeight: 700 }}>{status}</span></td>
                 <td><strong>Disbursed On:</strong> {payDate}</td>
                 <td><strong>UTR / Ref:</strong> {refNo}</td>
               </tr>

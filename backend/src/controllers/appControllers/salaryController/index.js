@@ -35,7 +35,30 @@ function numberToWords(num) {
 // Format currency
 function formatCurrency(amount) {
   const val = Number(amount || 0);
-  return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Compute total remaining leave balance from snapshot or fallback
+function getLeaveBalanceTotal(snapshot, fallback) {
+  if (snapshot && typeof snapshot === 'object') {
+    if (typeof snapshot.totalBalance === 'number') {
+      return snapshot.totalBalance;
+    }
+    let total = 0;
+    let found = false;
+    for (const key of Object.keys(snapshot)) {
+      const item = snapshot[key];
+      if (item && typeof item === 'object' && typeof item.allocated === 'number') {
+        found = true;
+        total += Math.max(0, (item.allocated || 0) - (item.used || 0));
+      }
+    }
+    if (found) return total;
+  }
+  if (fallback !== undefined && fallback !== null && !isNaN(Number(fallback))) {
+    return Number(fallback);
+  }
+  return '—';
 }
 
 // =========================================================================
@@ -86,7 +109,7 @@ const list = async (req, res) => {
     }
 
     const items = await Salary.find(filter)
-      .populate('employee', 'name surname employeeId departmentName designationName email bankDetails')
+      .populate('employee', 'name surname employeeId departmentName designationName email bankDetails workLocation workLocationName joiningDate')
       .sort({ year: -1, created: -1 })
       .lean();
 
@@ -557,14 +580,14 @@ const downloadSlipPdf = async (req, res) => {
       }
     }
 
-    // Prepare Payslip Data
-    const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : 'Employee');
-    const empCode = salary.employeeCode || salary.employee?.employeeId || 'EMP-000';
-    const dept = salary.department || salary.employee?.departmentName || 'Engineering';
-    const desig = salary.designation || salary.employee?.designationName || 'Specialist';
-    const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || 'Pune, India';
+    // Prepare Payslip Data (Strict Dynamic Source & No Invented Fallbacks)
+    const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : '') || '—';
+    const empCode = salary.employeeCode || salary.employee?.employeeId || '—';
+    const dept = salary.department || salary.employee?.departmentName || '—';
+    const desig = salary.designation || salary.employee?.designationName || '—';
+    const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || '—';
 
-    let doj = 'N/A';
+    let doj = '—';
     const rawDoj = salary.joiningDate || salary.employee?.joiningDate;
     if (rawDoj) {
       const d = new Date(rawDoj);
@@ -576,12 +599,12 @@ const downloadSlipPdf = async (req, res) => {
       }
     }
 
-    const workingDays = salary.workingDays !== undefined ? salary.workingDays : 30;
-    const paidDays = salary.paidDays !== undefined ? salary.paidDays : 30;
+    const workingDays = salary.workingDays !== undefined ? salary.workingDays : '—';
+    const paidDays = salary.paidDays !== undefined ? salary.paidDays : (typeof workingDays === 'number' ? workingDays : '—');
     const leaveCount = salary.approvedLeaveDays ?? salary.leaveCount ?? salary.leaveDays ?? 0;
-    const leaveDetails = salary.leaveDetails || (salary.lopDays > 0 ? `${salary.lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL'));
     const lopDays = salary.lopDays !== undefined ? salary.lopDays : 0;
-    const leaveBalance = salary.leaveBalanceSnapshot?.totalBalance ?? salary.leaveBalance ?? 'NIL';
+    const leaveDetails = salary.leaveDetails || (lopDays > 0 && leaveCount > 0 ? `${leaveCount} Days Approved / ${lopDays} Days LOP` : (lopDays > 0 ? `${lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL')));
+    const leaveBalance = getLeaveBalanceTotal(salary.leaveBalanceSnapshot, salary.leaveBalance);
 
     const basic = salary.basic || salary.basicSalary || 0;
     const hra = salary.hra || 0;
@@ -592,8 +615,9 @@ const downloadSlipPdf = async (req, res) => {
     const pt = salary.professionalTax || 0;
     const pf = salary.deductions || salary.pf || 0;
     const tds = salary.tds || 0;
-    const lopDed = (salary.lopDeduction || 0) + (salary.otherDeductions || 0);
-    const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed);
+    const lopDed = salary.lopDeduction || 0;
+    const otherDed = salary.otherDeductions || 0;
+    const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed + otherDed);
 
     const netSalary = salary.netSalary !== undefined ? salary.netSalary : (totalEarnings - totalDeductions);
     const rawWords = salary.netSalaryWords || numberToWords(netSalary);
@@ -601,10 +625,16 @@ const downloadSlipPdf = async (req, res) => {
 
     const monthYearLabel = `[${salary.month} ${salary.year}]`;
     const slipNo = salary.slipNumber || `TM-SLIP-${salary.year}-${salary.month}`;
-    const payDate = salary.paymentDate ? new Date(salary.paymentDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+    const isPaid = String(salary.status || '').toLowerCase() === 'paid';
+    const status = salary.status || 'Draft';
+    let payDate = 'Pending Disbursement';
+    if (salary.paymentDate) {
+      payDate = new Date(salary.paymentDate).toLocaleDateString('en-GB');
+    } else if (isPaid) {
+      payDate = 'Disbursed';
+    }
     const paymentMode = salary.paymentMode || 'Bank Transfer';
-    const refNo = salary.transactionReference || 'UTR-TM-202610-0981';
-    const status = salary.status || 'PAID';
+    const refNo = salary.transactionReference || (isPaid ? 'N/A' : 'Pending Disbursement');
 
     // Base64 Logo extraction
     const fs = require('fs');
@@ -880,27 +910,27 @@ const downloadSlipPdf = async (req, res) => {
             <table class="info-table">
               <tr>
                 <td class="info-label" style="width: 44%;">Employee Name</td>
-                <td class="info-val" style="width: 56%;">[${empName}]</td>
+                <td class="info-val" style="width: 56%;">${empName}</td>
               </tr>
               <tr>
                 <td class="info-label">Employee ID</td>
-                <td class="info-val">[${empCode}]</td>
+                <td class="info-val">${empCode}</td>
               </tr>
               <tr>
                 <td class="info-label">Department</td>
-                <td class="info-val">[${dept}]</td>
+                <td class="info-val">${dept}</td>
               </tr>
               <tr>
                 <td class="info-label">Designation</td>
-                <td class="info-val">[${desig}]</td>
+                <td class="info-val">${desig}</td>
               </tr>
               <tr>
                 <td class="info-label">Location</td>
-                <td class="info-val">[${location}]</td>
+                <td class="info-val">${location}</td>
               </tr>
               <tr>
                 <td class="info-label">Date of Joining</td>
-                <td class="info-val">[${doj}]</td>
+                <td class="info-val">${doj}</td>
               </tr>
             </table>
           </td>
@@ -914,27 +944,27 @@ const downloadSlipPdf = async (req, res) => {
             <table class="info-table">
               <tr>
                 <td class="info-label" style="width: 56%;">Total Working Days</td>
-                <td class="info-val" style="width: 44%;">[${String(workingDays).padStart(2, '0')}]</td>
+                <td class="info-val" style="width: 44%;">${typeof workingDays === 'number' ? String(workingDays).padStart(2, '0') : workingDays}</td>
               </tr>
               <tr>
                 <td class="info-label">Days Paid</td>
-                <td class="info-val">[${String(paidDays).padStart(2, '0')}]</td>
+                <td class="info-val">${typeof paidDays === 'number' ? String(paidDays).padStart(2, '0') : paidDays}</td>
               </tr>
               <tr>
                 <td class="info-label">Number of Leaves</td>
-                <td class="info-val">[${String(leaveCount).padStart(2, '0')}]</td>
+                <td class="info-val">${typeof leaveCount === 'number' ? String(leaveCount).padStart(2, '0') : leaveCount}</td>
               </tr>
               <tr>
                 <td class="info-label">Leave Details (if any)</td>
-                <td class="info-val">[${leaveDetails}]</td>
+                <td class="info-val">${leaveDetails}</td>
               </tr>
               <tr>
                 <td class="info-label">Loss of Pay Days</td>
-                <td class="info-val">[${String(lopDays).padStart(2, '0')}]</td>
+                <td class="info-val">${typeof lopDays === 'number' ? String(lopDays).padStart(2, '0') : lopDays}</td>
               </tr>
               <tr>
                 <td class="info-label">Leave Balance</td>
-                <td class="info-val">[${String(leaveBalance).padStart(2, '0')}]</td>
+                <td class="info-val">${typeof leaveBalance === 'number' ? String(leaveBalance).padStart(2, '0') : leaveBalance}</td>
               </tr>
             </table>
           </td>
@@ -1001,10 +1031,21 @@ const downloadSlipPdf = async (req, res) => {
                   <td class="item-label">Income Tax (TDS)</td>
                   <td class="item-amount">${formatCurrency(tds)}</td>
                 </tr>
+                ${otherDed > 0 && lopDed > 0 ? `
                 <tr>
                   <td class="item-label">Leave Deduction (LOP)</td>
-                  <td class="item-amount" style="${lopDed > 0 ? 'color: #cf1322;' : ''}">${formatCurrency(lopDed)}</td>
+                  <td class="item-amount" style="color: #cf1322;">${formatCurrency(lopDed)}</td>
                 </tr>
+                <tr>
+                  <td class="item-label">Other Deductions</td>
+                  <td class="item-amount" style="color: #cf1322;">${formatCurrency(otherDed)}</td>
+                </tr>
+                ` : `
+                <tr>
+                  <td class="item-label">${otherDed > 0 && lopDed === 0 ? 'Other Deductions' : 'Leave Deduction (LOP)'}</td>
+                  <td class="item-amount" style="${(lopDed > 0 || otherDed > 0) ? 'color: #cf1322;' : ''}">${formatCurrency(lopDed > 0 ? lopDed : otherDed)}</td>
+                </tr>
+                `}
                 <tr class="total-row">
                   <td class="total-label">Total Deductions</td>
                   <td class="total-amount">${formatCurrency(totalDeductions)}</td>
@@ -1021,7 +1062,7 @@ const downloadSlipPdf = async (req, res) => {
           <tr>
             <td style="text-align: left; vertical-align: middle;">
               <div class="net-title">Net Pay (Earnings - Deductions)</div>
-              <div class="net-words">In words: [${netWords}] only</div>
+              <div class="net-words">In words: ${netWords} only</div>
             </td>
             <td style="text-align: right; vertical-align: middle;">
               <div class="net-amount">${formatCurrency(netSalary)}</div>
@@ -1035,7 +1076,7 @@ const downloadSlipPdf = async (req, res) => {
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td><strong>Payment Mode:</strong> ${paymentMode}</td>
-            <td><strong>Status:</strong> <span style="color: #0d9488; font-weight: 700;">${status}</span></td>
+            <td><strong>Status:</strong> <span style="color: ${isPaid ? '#0d9488' : '#eab308'}; font-weight: 700;">${status}</span></td>
             <td><strong>Disbursed On:</strong> ${payDate}</td>
             <td><strong>UTR / Ref:</strong> ${refNo}</td>
           </tr>
