@@ -775,7 +775,7 @@ const employeeController = {
     const sortOrder = parseInt(sortValue) || -1;
     const sortField = sortBy || 'created';
 
-    const [result, count] = await Promise.all([
+    const [docs, count] = await Promise.all([
       Employee.find(filterConditions)
         .select('-bankDetails')
         .skip(skip)
@@ -785,9 +785,16 @@ const employeeController = {
         .populate('designation', 'name code level')
         .populate('workLocation', 'name code city type')
         .populate('reportingManager', 'name surname employeeId email photo')
+        .lean()
         .exec(),
       Employee.countDocuments(filterConditions),
     ]);
+
+    const result = docs.map((emp) => ({
+      ...emp,
+      id: emp._id.toString(),
+      fullName: emp.fullName || (emp.name && emp.surname ? `${emp.name} ${emp.surname}`.trim() : (emp.name || '')),
+    }));
 
     const pages = Math.ceil(count / limit);
     return res.status(200).json({
@@ -815,10 +822,17 @@ const employeeController = {
     }
 
     const Employee = mongoose.model('Employee');
-    const result = await Employee.find({ removed: false })
+    const docs = await Employee.find({ removed: false })
       .select('name surname employeeId email photo departmentName designationName status')
       .sort({ name: 1 })
+      .lean()
       .exec();
+
+    const result = docs.map((emp) => ({
+      ...emp,
+      id: emp._id.toString(),
+      fullName: emp.fullName || (emp.name && emp.surname ? `${emp.name} ${emp.surname}`.trim() : (emp.name || '')),
+    }));
 
     return res.status(200).json({
       success: true,
@@ -843,13 +857,20 @@ const employeeController = {
     const q = req.query.q || '';
     const regex = new RegExp(q, 'i');
 
-    const result = await Employee.find({
+    const docs = await Employee.find({
       removed: false,
       $or: [{ name: regex }, { surname: regex }, { employeeId: regex }, { email: regex }],
     })
       .select('-bankDetails')
       .limit(20)
+      .lean()
       .exec();
+
+    const result = docs.map((emp) => ({
+      ...emp,
+      id: emp._id.toString(),
+      fullName: emp.fullName || (emp.name && emp.surname ? `${emp.name} ${emp.surname}`.trim() : (emp.name || '')),
+    }));
 
     return res.status(200).json({
       success: true,
