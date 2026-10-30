@@ -48,7 +48,7 @@ const updateManySetting = async (req, res) => {
     });
   } else {
     try {
-      const cacheService = require('../../services/cacheService');
+      const cacheService = require('../../../services/cacheService');
       cacheService.incrementVersion('setting');
     } catch (e) {}
 

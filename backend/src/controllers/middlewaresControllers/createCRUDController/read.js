@@ -50,8 +50,10 @@ const read = async (Model, req, res) => {
       try {
         const cacheService = require('../../../services/cacheService');
         if (cacheService.isReady()) {
-          cacheService.set(cacheKey, { status: 200, payload }, 3600);
-          res.setHeader('X-Cache', 'MISS');
+          const cached = await cacheService.set(cacheKey, { status: 200, payload }, 3600);
+          if (cached) {
+            res.setHeader('X-Cache', 'MISS');
+          }
         }
       } catch (e) {}
     }

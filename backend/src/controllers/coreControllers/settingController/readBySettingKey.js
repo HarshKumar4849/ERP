@@ -31,7 +31,7 @@ const readBySettingKey = async (req, res) => {
 
   if (isCacheable) {
     try {
-      const cacheService = require('../../services/cacheService');
+      const cacheService = require('../../../services/cacheService');
       if (cacheService.isReady()) {
         const version = await cacheService.getVersion('setting');
         cacheKey = cacheService.buildKey({
@@ -70,10 +70,12 @@ const readBySettingKey = async (req, res) => {
     // Strictly ensure only non-private settings are written to cache
     if (isCacheable && cacheKey && result.isPrivate !== true) {
       try {
-        const cacheService = require('../../services/cacheService');
+        const cacheService = require('../../../services/cacheService');
         if (cacheService.isReady()) {
-          cacheService.set(cacheKey, { payload }, 1800);
-          res.setHeader('X-Cache', 'MISS');
+          const cached = await cacheService.set(cacheKey, { payload }, 1800);
+          if (cached) {
+            res.setHeader('X-Cache', 'MISS');
+          }
         }
       } catch (e) {}
     }

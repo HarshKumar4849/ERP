@@ -6,7 +6,7 @@ const listAll = async (req, res) => {
 
   let cacheKey = null;
   try {
-    const cacheService = require('../../services/cacheService');
+    const cacheService = require('../../../services/cacheService');
     if (cacheService.isReady()) {
       const version = await cacheService.getVersion('setting');
       cacheKey = cacheService.buildKey({
@@ -37,10 +37,12 @@ const listAll = async (req, res) => {
 
   if (cacheKey) {
     try {
-      const cacheService = require('../../services/cacheService');
+      const cacheService = require('../../../services/cacheService');
       if (cacheService.isReady()) {
-        cacheService.set(cacheKey, { payload }, 1800);
-        res.setHeader('X-Cache', 'MISS');
+        const cached = await cacheService.set(cacheKey, { payload }, 1800);
+        if (cached) {
+          res.setHeader('X-Cache', 'MISS');
+        }
       }
     } catch (e) {}
   }
