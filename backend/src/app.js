@@ -134,10 +134,10 @@ app.use((req, res, next) => {
 // Health check for load balancers, Vercel proxy, and uptime monitors
 app.get(['/health', '/api/health'], async (req, res) => {
   let dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  if (mongoose.connection.readyState === 0 && process.env.DATABASE) {
+  if (mongoose.connection.readyState !== 1 && process.env.DATABASE) {
     try {
       await connectDb();
-      dbStatus = 'connected';
+      dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     } catch (e) {
       dbStatus = 'connecting-failed';
     }

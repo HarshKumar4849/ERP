@@ -101,7 +101,20 @@ function gracefulShutdown({
       console.warn('[Shutdown] Notice while stopping scheduler:', schedErr.message);
     }
 
-    // 3. Close Socket.IO server if active
+    // 3. Drain active in-flight requests (wait up to 5 seconds or bounded timeout)
+    const drainStart = Date.now();
+    const maxDrainWait = Math.min(timeoutMs - 2000, 5000);
+    while (activeRequests > 0 && Date.now() - drainStart < maxDrainWait) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    if (activeRequests > 0) {
+      console.warn(`[Shutdown] ${activeRequests} request(s) still active after drain period.`);
+    } else {
+      console.log('[Shutdown] In-flight requests drained successfully.');
+    }
+
+    // 4. Close Socket.IO server if active
     if (io && typeof io.close === 'function') {
       try {
         await new Promise((resolve) => {
@@ -115,7 +128,7 @@ function gracefulShutdown({
       }
     }
 
-    // 4. Stop HTTP server from accepting new connections
+    // 5. Stop HTTP server from accepting new connections
     if (server && typeof server.close === 'function') {
       try {
         // Close idle keep-alive connections if supported (Node.js 18.2+)
@@ -137,19 +150,6 @@ function gracefulShutdown({
       } catch (srvErr) {
         console.error('[Shutdown] HTTP server close exception:', srvErr.message);
       }
-    }
-
-    // 5. Drain active in-flight requests (wait up to 5 seconds or bounded timeout)
-    const drainStart = Date.now();
-    const maxDrainWait = Math.min(timeoutMs - 2000, 5000);
-    while (activeRequests > 0 && Date.now() - drainStart < maxDrainWait) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
-    if (activeRequests > 0) {
-      console.warn(`[Shutdown] ${activeRequests} request(s) still active after drain period.`);
-    } else {
-      console.log('[Shutdown] In-flight requests drained successfully.');
     }
 
     // 6. Close MongoDB connection pool cleanly
