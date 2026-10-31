@@ -35,7 +35,30 @@ function numberToWords(num) {
 // Format currency
 function formatCurrency(amount) {
   const val = Number(amount || 0);
-  return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₹ ' + val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Compute total remaining leave balance from snapshot or fallback
+function getLeaveBalanceTotal(snapshot, fallback) {
+  if (snapshot && typeof snapshot === 'object') {
+    if (typeof snapshot.totalBalance === 'number') {
+      return snapshot.totalBalance;
+    }
+    let total = 0;
+    let found = false;
+    for (const key of Object.keys(snapshot)) {
+      const item = snapshot[key];
+      if (item && typeof item === 'object' && typeof item.allocated === 'number') {
+        found = true;
+        total += Math.max(0, (item.allocated || 0) - (item.used || 0));
+      }
+    }
+    if (found) return total;
+  }
+  if (fallback !== undefined && fallback !== null && !isNaN(Number(fallback))) {
+    return Number(fallback);
+  }
+  return '—';
 }
 
 // =========================================================================
@@ -86,7 +109,7 @@ const list = async (req, res) => {
     }
 
     const items = await Salary.find(filter)
-      .populate('employee', 'name surname employeeId departmentName designationName email bankDetails')
+      .populate('employee', 'name surname employeeId departmentName designationName email bankDetails workLocation workLocationName joiningDate')
       .sort({ year: -1, created: -1 })
       .lean();
 
@@ -557,21 +580,79 @@ const downloadSlipPdf = async (req, res) => {
       }
     }
 
-    // Prepare Payslip Data
-    const empName = salary.employeeName || (salary.employee ? `${salary.employee.name} ${salary.employee.surname || ''}`.trim() : 'Employee');
-    const empCode = salary.employeeCode || salary.employee?.employeeId || 'TM-EMP-001';
-    const dept = salary.department || salary.employee?.departmentName || 'Engineering';
-    const desig = salary.designation || salary.employee?.designationName || 'Specialist';
-    const doj = salary.joiningDate ? new Date(salary.joiningDate).toLocaleDateString('en-IN') : 'N/A';
-    const pan = salary.panNumber || '';
-    const uan = salary.uanNumber || '';
-    const bankName = salary.bankDetails?.bankName || '';
-    const accNo = salary.bankDetails?.accountNumber || '';
-    const ifsc = salary.bankDetails?.ifscCode || '';
+    // Prepare Payslip Data (Strict Dynamic Source & No Invented Fallbacks)
+    const empName = salary.employeeName || (salary.employee ? `${salary.employee.name || ''} ${salary.employee.surname || ''}`.trim() : '') || '—';
+    const empCode = salary.employeeCode || salary.employee?.employeeId || '—';
+    const dept = salary.department || salary.employee?.departmentName || '—';
+    const desig = salary.designation || salary.employee?.designationName || '—';
+    const location = salary.workLocationName || salary.workLocation || salary.employee?.workLocationName || salary.employee?.workLocation?.name || '—';
 
-    const payDate = salary.paymentDate ? new Date(salary.paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
+    let doj = '—';
+    const rawDoj = salary.joiningDate || salary.employee?.joiningDate;
+    if (rawDoj) {
+      const d = new Date(rawDoj);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const y = d.getFullYear();
+        doj = `${day}/${m}/${y}`;
+      }
+    }
+
+    const workingDays = salary.workingDays !== undefined ? salary.workingDays : '—';
+    const paidDays = salary.paidDays !== undefined ? salary.paidDays : (typeof workingDays === 'number' ? workingDays : '—');
+    const leaveCount = salary.approvedLeaveDays ?? salary.leaveCount ?? salary.leaveDays ?? 0;
+    const lopDays = salary.lopDays !== undefined ? salary.lopDays : 0;
+    const leaveDetails = salary.leaveDetails || (lopDays > 0 && leaveCount > 0 ? `${leaveCount} Days Approved / ${lopDays} Days LOP` : (lopDays > 0 ? `${lopDays} Days LOP` : (leaveCount > 0 ? `${leaveCount} Days Approved` : 'NIL')));
+    const leaveBalance = getLeaveBalanceTotal(salary.leaveBalanceSnapshot, salary.leaveBalance);
+
+    const basic = salary.basic || salary.basicSalary || 0;
+    const hra = salary.hra || 0;
+    const specialAllowance = salary.specialAllowance !== undefined ? salary.specialAllowance : (salary.allowances || 0);
+    const otherAllowances = salary.otherAllowances !== undefined ? salary.otherAllowances : ((salary.incentives || 0) + (salary.bonus || 0));
+    const totalEarnings = salary.totalEarnings !== undefined ? salary.totalEarnings : (basic + hra + specialAllowance + otherAllowances);
+
+    const pt = salary.professionalTax || 0;
+    const pf = salary.deductions || salary.pf || 0;
+    const tds = salary.tds || 0;
+    const lopDed = salary.lopDeduction || 0;
+    const otherDed = salary.otherDeductions || 0;
+    const totalDeductions = salary.totalDeductions !== undefined ? salary.totalDeductions : (pt + pf + tds + lopDed + otherDed);
+
+    const netSalary = salary.netSalary !== undefined ? salary.netSalary : (totalEarnings - totalDeductions);
+    const rawWords = salary.netSalaryWords || numberToWords(netSalary);
+    const netWords = rawWords.replace(/^Rupees\s+/i, '').replace(/\s+Only$/i, '').trim();
+
+    const monthYearLabel = `[${salary.month} ${salary.year}]`;
     const slipNo = salary.slipNumber || `TM-SLIP-${salary.year}-${salary.month}`;
-    const words = salary.netSalaryWords || numberToWords(salary.netSalary);
+    const isPaid = String(salary.status || '').toLowerCase() === 'paid';
+    const status = salary.status || 'Draft';
+    let payDate = 'Pending Disbursement';
+    if (salary.paymentDate) {
+      payDate = new Date(salary.paymentDate).toLocaleDateString('en-GB');
+    } else if (isPaid) {
+      payDate = 'Disbursed';
+    }
+    const paymentMode = salary.paymentMode || 'Bank Transfer';
+    const refNo = salary.transactionReference || (isPaid ? 'N/A' : 'Pending Disbursement');
+
+    // Base64 Logo extraction
+    const fs = require('fs');
+    const path = require('path');
+    let logoDataUri = '';
+    try {
+      const p1 = path.join(__dirname, '../../../../frontend/src/style/images/logo-icon.png');
+      if (fs.existsSync(p1)) {
+        logoDataUri = `data:image/png;base64,${fs.readFileSync(p1).toString('base64')}`;
+      } else {
+        const p2 = path.join(__dirname, '../../../public/uploads/setting/company-logo.png');
+        if (fs.existsSync(p2)) {
+          logoDataUri = `data:image/png;base64,${fs.readFileSync(p2).toString('base64')}`;
+        }
+      }
+    } catch (e) {
+      // quiet fallback
+    }
 
     // Build Pure HTML Payslip
     const html = `
@@ -580,319 +661,431 @@ const downloadSlipPdf = async (req, res) => {
     <head>
       <meta charset="utf-8" />
       <style>
+        * { box-sizing: border-box; }
         body {
-          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-          color: #262626;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          color: #0f172a;
           margin: 0;
-          padding: 24px;
+          padding: 16px 20px;
           font-size: 11.5px;
           line-height: 1.4;
           background: #ffffff;
         }
-        .header {
-          border-bottom: 2px solid #002244;
-          padding-bottom: 14px;
-          margin-bottom: 16px;
+        .header-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 12px;
+        }
+        .brand-icon {
+          height: 44px;
+          width: auto;
+          vertical-align: middle;
         }
         .company-name {
-          font-size: 20px;
+          font-size: 24px;
           font-weight: 800;
-          color: #002244;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin: 0 0 4px 0;
-        }
-        .company-sub {
-          font-size: 10px;
-          color: #595959;
+          color: #1e293b;
+          letter-spacing: -0.5px;
+          line-height: 1.1;
           margin: 0;
         }
-        .title-badge {
-          background: #002244;
-          color: #ffffff;
-          padding: 6px 12px;
-          font-weight: 700;
+        .company-sub {
           font-size: 13px;
-          text-align: center;
-          margin-bottom: 16px;
-          letter-spacing: 1px;
+          font-weight: 600;
+          color: #334155;
+          line-height: 1.2;
+          margin: 2px 0 0 0;
         }
-        .info-grid {
+        .slip-subtitle {
+          font-size: 11px;
+          font-weight: 600;
+          color: #64748b;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        .slip-month {
+          font-size: 24px;
+          font-weight: 800;
+          color: #006884;
+          margin: 0;
+          line-height: 1.1;
+        }
+        .address-banner {
+          background: #006884;
+          padding: 8px 14px;
+          border-radius: 2px;
+          margin-bottom: 20px;
+          color: #ffffff;
+        }
+        .address-table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 16px;
         }
-        .info-grid td {
-          padding: 4px 6px;
-          vertical-align: top;
-          width: 25%;
+        .address-text {
+          color: #ffffff;
+          font-size: 10px;
+          font-weight: 500;
+          line-height: 1.35;
+          text-align: left;
+          vertical-align: middle;
+        }
+        .cin-text {
+          color: #ffffff;
+          font-size: 10.5px;
+          font-weight: 600;
+          text-align: right;
+          vertical-align: middle;
+          white-space: nowrap;
+          padding-left: 12px;
+        }
+        .section-header {
+          color: #006884;
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          border-bottom: 1.5px solid #006884;
+          padding-bottom: 6px;
+          margin-bottom: 8px;
+        }
+        .info-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .info-table td {
+          padding: 5px 2px;
+          font-size: 11.5px;
+          border-bottom: 1px solid #f1f5f9;
         }
         .info-label {
-          color: #8c8c8c;
-          font-size: 10px;
-          text-transform: uppercase;
+          color: #64748b;
+          font-weight: 500;
+          text-align: left;
         }
         .info-val {
-          font-weight: 600;
-          color: #000000;
+          color: #0f172a;
+          font-weight: 700;
+          text-align: right;
         }
-        .salary-table {
+        .table-box {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 16px;
+          border: 1px solid #e2e8f0;
         }
-        .salary-table th {
-          background: #f0f5fa;
-          color: #002244;
+        .th-teal {
+          background: #006884;
+          color: #ffffff;
+          font-size: 12.5px;
           font-weight: 700;
-          padding: 8px;
+          padding: 8px 14px;
           text-align: left;
-          border-top: 1px solid #d9d9d9;
-          border-bottom: 1px solid #d9d9d9;
-          font-size: 11px;
+          letter-spacing: 0.3px;
         }
-        .salary-table td {
-          padding: 6px 8px;
-          border-bottom: 1px solid #f0f0f0;
+        .table-box td {
+          padding: 7px 14px;
+          font-size: 11.5px;
+          border-bottom: 1px solid #f1f5f9;
         }
-        .amount-col {
-          text-align: right;
+        .item-label {
+          color: #334155;
           font-weight: 500;
+          text-align: left;
+        }
+        .item-amount {
+          color: #0f172a;
+          font-weight: 600;
+          text-align: right;
+          white-space: nowrap;
         }
         .total-row td {
+          background: #f1f5f9;
+          border-top: 1px solid #e2e8f0;
+          border-bottom: none;
+          padding: 9px 14px;
+        }
+        .total-label {
+          color: #0f172a;
           font-weight: 700;
-          background: #fafafa;
-          border-top: 1.5px solid #002244;
-          border-bottom: 1.5px solid #002244;
-          color: #002244;
+          font-size: 12px;
+          text-align: left;
+        }
+        .total-amount {
+          color: #0f172a;
+          font-weight: 700;
+          font-size: 12px;
+          text-align: right;
+          white-space: nowrap;
         }
         .net-box {
-          border: 2px solid #002244;
-          background: #f8fbff;
-          padding: 12px 16px;
+          background: #f0f4f8;
+          border-radius: 4px;
+          padding: 16px 20px;
+          margin-top: 16px;
           margin-bottom: 16px;
         }
-        .net-amount {
-          font-size: 18px;
-          font-weight: 800;
-          color: #002244;
-        }
-        .net-words {
-          font-size: 11px;
-          color: #595959;
-          font-style: italic;
-          margin-top: 2px;
-        }
-        .payment-info {
+        .net-table {
           width: 100%;
           border-collapse: collapse;
+        }
+        .net-title {
+          color: #475569;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .net-words {
+          color: #64748b;
+          font-size: 11.5px;
+          font-weight: 500;
+          margin-top: 4px;
+        }
+        .net-amount {
+          color: #0f172a;
+          font-size: 26px;
+          font-weight: 800;
+          text-align: right;
+          letter-spacing: -0.5px;
+          white-space: nowrap;
+        }
+        .payment-bar {
           background: #fafafa;
-          border: 1px solid #e8e8e8;
-          margin-bottom: 24px;
-        }
-        .payment-info td {
-          padding: 6px 10px;
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          padding: 7px 12px;
+          margin-bottom: 12px;
           font-size: 10.5px;
+          color: #475569;
         }
-        .signatures {
-          width: 100%;
-          margin-top: 36px;
-        }
-        .signatures td {
+        .note {
           text-align: center;
-          width: 50%;
-          padding: 0 20px;
-        }
-        .sig-line {
-          border-top: 1px dashed #8c8c8c;
+          font-size: 9.5px;
+          color: #94a3b8;
+          margin-top: 16px;
           padding-top: 6px;
-          font-size: 10px;
-          color: #595959;
-        }
-        .footer-note {
-          text-align: center;
-          font-size: 9px;
-          color: #8c8c8c;
-          margin-top: 24px;
-          border-top: 1px solid #f0f0f0;
-          padding-top: 8px;
         }
       </style>
     </head>
     <body>
-      <div class="header">
-        <table style="width: 100%;">
+      <!-- Header with Exact Requested Branding -->
+      <table class="header-table">
+        <tr>
+          <td style="vertical-align: middle;">
+            <table style="border-collapse: collapse;">
+              <tr>
+                ${logoDataUri ? `<td style="vertical-align: middle; padding-right: 12px;"><img src="${logoDataUri}" class="brand-icon" alt="Tecmotiv" /></td>` : ''}
+                <td style="vertical-align: middle;">
+                  <div class="company-name">Tecmotiv</div>
+                  <div class="company-sub">Solutions Pvt Ltd</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td style="text-align: right; vertical-align: middle;">
+            <div class="slip-subtitle">SALARY SLIP</div>
+            <div class="slip-month">${monthYearLabel}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Solid Teal Address & CIN Banner -->
+      <div class="address-banner">
+        <table class="address-table">
           <tr>
-            <td>
-              <h1 class="company-name">TECMOTIV SOLUTIONS PVT. LTD.</h1>
-              <p class="company-sub">
-                CIN: U72900KA2024PTC123456 • Corporate IT Park, Sector 4, Silicon Boulevard, Bangalore - 560100<br/>
-                Email: payroll@tecmotiv.com • Website: www.tecmotiv.com
-              </p>
+            <td class="address-text">
+              <strong>Office Address:</strong> Level-5, Vatika Business Centre Block C, Tech Park One, Loop Rd, Shastrinagar, Yerawada, Pune 411 006, India
             </td>
-            <td style="text-align: right; vertical-align: top;">
-              <span style="font-size: 11px; font-weight: 700; color: #002244;">SLIP #: ${slipNo}</span><br/>
-              <span style="font-size: 10px; color: #8c8c8c;">Date: ${payDate}</span>
+            <td class="cin-text">
+              CIN: U74909PN2023PTC222092
             </td>
           </tr>
         </table>
       </div>
 
-      <div class="title-badge">
-        PAYSLIP FOR THE MONTH OF ${String(salary.month).toUpperCase()} ${salary.year}
-      </div>
+      <!-- 2-Column Section: Employee Details & Attendance / Leave -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <!-- Left Column: EMPLOYEE DETAILS -->
+          <td style="width: 48%; vertical-align: top; padding-right: 12px;">
+            <div class="section-header">EMPLOYEE DETAILS</div>
+            <table class="info-table">
+              <tr>
+                <td class="info-label" style="width: 44%;">Employee Name</td>
+                <td class="info-val" style="width: 56%;">${empName}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Employee ID</td>
+                <td class="info-val">${empCode}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Department</td>
+                <td class="info-val">${dept}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Designation</td>
+                <td class="info-val">${desig}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Location</td>
+                <td class="info-val">${location}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Date of Joining</td>
+                <td class="info-val">${doj}</td>
+              </tr>
+            </table>
+          </td>
 
-      <!-- Employee Details & Attendance Grid -->
-      <table class="info-grid">
-        <tr>
-          <td>
-            <div class="info-label">Employee Code</div>
-            <div class="info-val">${empCode}</div>
-          </td>
-          <td>
-            <div class="info-label">Employee Name</div>
-            <div class="info-val">${empName}</div>
-          </td>
-          <td>
-            <div class="info-label">Designation</div>
-            <div class="info-val">${desig}</div>
-          </td>
-          <td>
-            <div class="info-label">Department</div>
-            <div class="info-val">${dept}</div>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <div class="info-label">Date of Joining</div>
-            <div class="info-val">${doj}</div>
-          </td>
-          <td>
-            <div class="info-label">PAN Number</div>
-            <div class="info-val">${pan}</div>
-          </td>
-          <td>
-            <div class="info-label">UAN Number</div>
-            <div class="info-val">${uan}</div>
-          </td>
-          <td>
-            <div class="info-label">Bank Name</div>
-            <div class="info-val">${bankName}</div>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <div class="info-label">Bank Account No.</div>
-            <div class="info-val">${accNo}</div>
-          </td>
-          <td>
-            <div class="info-label">IFSC Code</div>
-            <div class="info-val">${ifsc}</div>
-          </td>
-          <td>
-            <div class="info-label">Working Days</div>
-            <div class="info-val">${salary.workingDays || 30} Days</div>
-          </td>
-          <td>
-            <div class="info-label">Paid / LOP Days</div>
-            <div class="info-val">${salary.paidDays || 30} / ${salary.lopDays || 0} Days</div>
+          <!-- Spacer -->
+          <td style="width: 4%;">&nbsp;</td>
+
+          <!-- Right Column: ATTENDANCE & LEAVE -->
+          <td style="width: 48%; vertical-align: top; padding-left: 12px;">
+            <div class="section-header">ATTENDANCE & LEAVE</div>
+            <table class="info-table">
+              <tr>
+                <td class="info-label" style="width: 56%;">Total Working Days</td>
+                <td class="info-val" style="width: 44%;">${typeof workingDays === 'number' ? String(workingDays).padStart(2, '0') : workingDays}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Days Paid</td>
+                <td class="info-val">${typeof paidDays === 'number' ? String(paidDays).padStart(2, '0') : paidDays}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Number of Leaves</td>
+                <td class="info-val">${typeof leaveCount === 'number' ? String(leaveCount).padStart(2, '0') : leaveCount}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Leave Details (if any)</td>
+                <td class="info-val">${leaveDetails}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Loss of Pay Days</td>
+                <td class="info-val">${typeof lopDays === 'number' ? String(lopDays).padStart(2, '0') : lopDays}</td>
+              </tr>
+              <tr>
+                <td class="info-label">Leave Balance</td>
+                <td class="info-val">${typeof leaveBalance === 'number' ? String(leaveBalance).padStart(2, '0') : leaveBalance}</td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
 
-      <!-- Earnings & Deductions Dual Column -->
-      <table class="salary-table">
-        <thead>
-          <tr>
-            <th style="width: 32%;">EARNINGS</th>
-            <th class="amount-col" style="width: 18%;">AMOUNT (₹)</th>
-            <th style="width: 32%;">DEDUCTIONS</th>
-            <th class="amount-col" style="width: 18%;">AMOUNT (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Basic Salary</td>
-            <td class="amount-col">${formatCurrency(salary.basic || salary.basicSalary)}</td>
-            <td>Professional Tax (PT)</td>
-            <td class="amount-col">${formatCurrency(salary.professionalTax)}</td>
-          </tr>
-          <tr>
-            <td>House Rent Allowance (HRA)</td>
-            <td class="amount-col">${formatCurrency(salary.hra)}</td>
-            <td>TDS / Income Tax</td>
-            <td class="amount-col">${formatCurrency(salary.tds)}</td>
-          </tr>
-          <tr>
-            <td>Special & Other Allowances</td>
-            <td class="amount-col">${formatCurrency(salary.allowances)}</td>
-            <td>Standard Deductions / PF</td>
-            <td class="amount-col">${formatCurrency(salary.deductions)}</td>
-          </tr>
-          <tr>
-            <td>Performance Incentives</td>
-            <td class="amount-col">${formatCurrency(salary.incentives)}</td>
-            <td>Other Deductions / LOP</td>
-            <td class="amount-col">${formatCurrency(salary.otherDeductions)}</td>
-          </tr>
-          <tr>
-            <td>Bonus & Ex-Gratia</td>
-            <td class="amount-col">${formatCurrency(salary.bonus)}</td>
-            <td>Loss of Pay (LOP) Deduction</td>
-            <td class="amount-col">${formatCurrency(salary.lopDeduction || 0)}</td>
-          </tr>
-          <tr class="total-row">
-            <td>GROSS EARNINGS</td>
-            <td class="amount-col">${formatCurrency(salary.totalEarnings)}</td>
-            <td>TOTAL DEDUCTIONS</td>
-            <td class="amount-col">${formatCurrency(salary.totalDeductions)}</td>
-          </tr>
-        </tbody>
+      <!-- Side-by-Side Tables: Earnings & Deductions -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+        <tr>
+          <!-- Earnings Table -->
+          <td style="width: 48%; vertical-align: top; padding-right: 10px;">
+            <table class="table-box">
+              <thead>
+                <tr>
+                  <th colspan="2" class="th-teal">Earnings</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="item-label">Basic Salary</td>
+                  <td class="item-amount">${formatCurrency(basic)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">House Rent Allowance</td>
+                  <td class="item-amount">${formatCurrency(hra)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">Special Allowance</td>
+                  <td class="item-amount">${formatCurrency(specialAllowance)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">Other Allowances</td>
+                  <td class="item-amount">${formatCurrency(otherAllowances)}</td>
+                </tr>
+                <tr class="total-row">
+                  <td class="total-label">Total Earnings</td>
+                  <td class="total-amount">${formatCurrency(totalEarnings)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+
+          <!-- Spacer -->
+          <td style="width: 4%;">&nbsp;</td>
+
+          <!-- Deductions Table -->
+          <td style="width: 48%; vertical-align: top; padding-left: 10px;">
+            <table class="table-box">
+              <thead>
+                <tr>
+                  <th colspan="2" class="th-teal">Deductions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="item-label">Professional Tax</td>
+                  <td class="item-amount">${formatCurrency(pt)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">Provident Fund</td>
+                  <td class="item-amount">${formatCurrency(pf)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">Income Tax (TDS)</td>
+                  <td class="item-amount">${formatCurrency(tds)}</td>
+                </tr>
+                ${otherDed > 0 && lopDed > 0 ? `
+                <tr>
+                  <td class="item-label">Leave Deduction (LOP)</td>
+                  <td class="item-amount" style="color: #cf1322;">${formatCurrency(lopDed)}</td>
+                </tr>
+                <tr>
+                  <td class="item-label">Other Deductions</td>
+                  <td class="item-amount" style="color: #cf1322;">${formatCurrency(otherDed)}</td>
+                </tr>
+                ` : `
+                <tr>
+                  <td class="item-label">${otherDed > 0 && lopDed === 0 ? 'Other Deductions' : 'Leave Deduction (LOP)'}</td>
+                  <td class="item-amount" style="${(lopDed > 0 || otherDed > 0) ? 'color: #cf1322;' : ''}">${formatCurrency(lopDed > 0 ? lopDed : otherDed)}</td>
+                </tr>
+                `}
+                <tr class="total-row">
+                  <td class="total-label">Total Deductions</td>
+                  <td class="total-amount">${formatCurrency(totalDeductions)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
       </table>
 
-      <!-- Net Salary Box -->
+      <!-- Prominent Net Pay Card (Soft Ice-Blue Background) -->
       <div class="net-box">
-        <table style="width: 100%;">
+        <table class="net-table">
           <tr>
-            <td>
-              <span style="font-size: 12px; font-weight: 700; color: #595959; text-transform: uppercase;">
-                NET SALARY PAYABLE
-              </span>
-              <div class="net-words">${words}</div>
+            <td style="text-align: left; vertical-align: middle;">
+              <div class="net-title">Net Pay (Earnings - Deductions)</div>
+              <div class="net-words">In words: ${netWords} only</div>
             </td>
             <td style="text-align: right; vertical-align: middle;">
-              <span class="net-amount">${formatCurrency(salary.netSalary)}</span>
+              <div class="net-amount">${formatCurrency(netSalary)}</div>
             </td>
           </tr>
         </table>
       </div>
 
-      <!-- Payment Information -->
-      <table class="payment-info">
-        <tr>
-          <td><strong>Payment Mode:</strong> ${salary.paymentMode || 'Bank Transfer'}</td>
-          <td><strong>Payment Status:</strong> <span style="color: #237804; font-weight: 700;">${salary.status || 'PAID'}</span></td>
-          <td><strong>Payment Date:</strong> ${payDate}</td>
-          <td><strong>Ref / UTR:</strong> ${salary.transactionReference || 'UTR-TM-202610-0981'}</td>
-        </tr>
-      </table>
+      <!-- Payment & Disbursement Information -->
+      <div class="payment-bar">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td><strong>Payment Mode:</strong> ${paymentMode}</td>
+            <td><strong>Status:</strong> <span style="color: ${isPaid ? '#0d9488' : '#eab308'}; font-weight: 700;">${status}</span></td>
+            <td><strong>Disbursed On:</strong> ${payDate}</td>
+            <td><strong>UTR / Ref:</strong> ${refNo}</td>
+          </tr>
+        </table>
+      </div>
 
-      <!-- Signatures -->
-      <table class="signatures">
-        <tr>
-          <td>
-            <div style="height: 36px;"></div>
-            <div class="sig-line">Employer Signature / Authorized Signatory</div>
-          </td>
-          <td>
-            <div style="height: 36px;"></div>
-            <div class="sig-line">Employee Signature / Digital Acknowledgement</div>
-          </td>
-        </tr>
-      </table>
-
-      <div class="footer-note">
-        This is a system-generated document from Tecmotiv ERP. No physical signature is required. For inquiries, contact payroll@tecmotiv.com.
+      <!-- Computer-Generated Legal Disclaimer -->
+      <div class="note">
+        This is a computer-generated salary slip from Tecmotiv ERP. No physical signature is required. For inquiries, please contact payroll@tecmotiv.com.
       </div>
     </body>
     </html>

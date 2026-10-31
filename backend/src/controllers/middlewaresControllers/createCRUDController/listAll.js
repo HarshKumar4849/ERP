@@ -1,5 +1,7 @@
 const { buildScopeFilter } = require('./scopeFilter');
 
+const CACHEABLE_MODELS = ['Department', 'Designation', 'Location'];
+
 const listAll = async (Model, req, res) => {
   const sort = req.query.sort || 'desc';
   const enabled = req.query.enabled || undefined;
@@ -9,8 +11,35 @@ const listAll = async (Model, req, res) => {
   // is not allowed to see.
   const scopeCondition = buildScopeFilter(Model, req);
 
-  //  Query the database for a list of all results
+  const modelName = Model.modelName;
+  const isCacheable = CACHEABLE_MODELS.includes(modelName) && Object.keys(scopeCondition).length === 0;
+  let cacheKey = null;
 
+  if (isCacheable) {
+    try {
+      const cacheService = require('../../../services/cacheService');
+      if (cacheService.isReady()) {
+        const version = await cacheService.getVersion(modelName.toLowerCase());
+        const sortKey = sort === 'desc' ? 'desc' : 'asc';
+        const enabledKey = enabled !== undefined ? `en_${enabled}` : 'en_all';
+        cacheKey = cacheService.buildKey({
+          entity: modelName.toLowerCase(),
+          scope: `listAll:${sortKey}:${enabledKey}`,
+          version,
+        });
+
+        const cached = await cacheService.get(cacheKey);
+        if (cached && cached.payload) {
+          res.setHeader('X-Cache', 'HIT');
+          return res.status(cached.status || 200).json(cached.payload);
+        }
+      }
+    } catch (cacheErr) {
+      // Fallback silently to MongoDB
+    }
+  }
+
+  // Query the database for a list of all results
   let result;
   if (enabled === undefined) {
     result = await Model.find({
@@ -31,19 +60,26 @@ const listAll = async (Model, req, res) => {
       .exec();
   }
 
-  if (result.length > 0) {
-    return res.status(200).json({
-      success: true,
-      result,
-      message: 'Successfully found all documents',
-    });
-  } else {
-    return res.status(203).json({
-      success: false,
-      result: [],
-      message: 'Collection is Empty',
-    });
+  const responseStatus = result.length > 0 ? 200 : 203;
+  const responsePayload = {
+    success: result.length > 0,
+    result,
+    message: result.length > 0 ? 'Successfully found all documents' : 'Collection is Empty',
+  };
+
+  if (isCacheable && cacheKey) {
+    try {
+      const cacheService = require('../../../services/cacheService');
+      if (cacheService.isReady()) {
+        const cached = await cacheService.set(cacheKey, { status: responseStatus, payload: responsePayload }, 3600);
+        if (cached) {
+          res.setHeader('X-Cache', 'MISS');
+        }
+      }
+    } catch (e) {}
   }
+
+  return res.status(responseStatus).json(responsePayload);
 };
 
 module.exports = listAll;

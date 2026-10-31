@@ -38,6 +38,11 @@ const updateBySettingKey = async (req, res) => {
       message: 'No document found by this settingKey: ' + settingKey,
     });
   } else {
+    try {
+      const cacheService = require('../../../services/cacheService');
+      cacheService.incrementVersion('setting');
+    } catch (e) {}
+
     return res.status(200).json({
       success: true,
       result,

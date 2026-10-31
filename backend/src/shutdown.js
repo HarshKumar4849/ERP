@@ -160,13 +160,21 @@ function gracefulShutdown({
       console.error('[Shutdown] Error disconnecting MongoDB:', dbErr.message);
     }
 
+    // 7. Cleanly disconnect Redis cache client if active
+    try {
+      const cacheService = require('./services/cacheService');
+      await cacheService.disconnect();
+    } catch (cacheErr) {
+      console.warn('[Shutdown] Notice disconnecting Redis:', cacheErr.message);
+    }
+
     if (forceTimer) {
       clearTimeout(forceTimer);
     }
 
     console.log('[Shutdown] Graceful shutdown completed cleanly.');
 
-    // 7. Exit cleanly only after all cleanup promises have resolved
+    // 8. Exit cleanly only after all cleanup promises have resolved
     if (exitProcess) {
       process.exit(0);
     }

@@ -147,10 +147,7 @@ const overview = async (req, res) => {
         .populate('project', 'name code')
         .sort({ dueDate: 1 })
         .lean(),
-      Event.find(eventFilter)
-        .sort({ startDate: 1 })
-        .limit(10)
-        .lean(),
+      Event.find(eventFilter).sort({ startDate: 1 }).limit(10).lean(),
       Project.find({ removed: false, status: 'active' })
         .select('name code department startDate endDate status')
         .lean(),
