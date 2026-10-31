@@ -37,6 +37,7 @@ import axios from 'axios';
 import { API_BASE_URL, FILE_BASE_URL } from '@/config/serverApiConfig';
 import storePersist from '@/redux/storePersist';
 import EmployeeDocumentVault from './EmployeeDocumentVault';
+import AvailabilityBadge from '@/components/AvailabilityBadge';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -206,6 +207,7 @@ export default function EmployeeProfileDrawer({
               <Tag color={getStatusColor(employee.status)} style={{ fontWeight: 600 }}>
                 {employee.status || 'Active'}
               </Tag>
+              <AvailabilityBadge availability={employee.availability} showLabel={true} />
             </div>
             <Text type="secondary" style={{ fontSize: 14, display: 'block', marginTop: 4 }}>
               {employee.designationName || employee.designation?.name || 'Staff Member'}

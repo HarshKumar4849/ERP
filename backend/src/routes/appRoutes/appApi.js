@@ -30,8 +30,13 @@ routesList.forEach(({ entity, controllerName }) => {
 const { singleStorageUpload } = require('../../middlewares/uploadMiddleware');
 const vaultUpload = require('../../middlewares/uploadMiddleware/vaultStorageUpload');
 
-// Dedicated employee endpoints: Photo Upload & Quick Status Change
+// Dedicated employee endpoints: Photo Upload, Quick Status Change & Live Availability
 if (appControllers['employeeController']) {
+  router.route('/employee/availability').get(
+    rbacMiddleware('employee', 'read'),
+    catchErrors(appControllers['employeeController'].availability)
+  );
+
   router.route('/employee/upload-photo/:id').patch(
     rbacMiddleware('employee', 'update'),
     singleStorageUpload({ entity: 'employee', fieldName: 'photo', fileType: 'image' }),

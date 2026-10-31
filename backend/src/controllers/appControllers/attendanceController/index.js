@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 const { ROLES } = require('../../../rbac/roles');
+let getSocketIO;
+try {
+  getSocketIO = require('../../../socket').getSocketIO;
+} catch (e) {
+  getSocketIO = () => null;
+}
 
 // Helper to normalize date to YYYY-MM-DD and start of day
 const getDayBounds = (d = new Date()) => {
@@ -197,6 +203,19 @@ const login = async (req, res) => {
     'employeeId name surname photo departmentName designationName email'
   );
 
+  try {
+    const io = getSocketIO ? getSocketIO() : null;
+    if (io && targetEmployee?._id) {
+      io.emit('availability:update', {
+        employeeId: targetEmployee._id.toString(),
+        action: 'check-in',
+        timestamp: Date.now(),
+      });
+    }
+  } catch (socketErr) {
+    console.warn('Socket emission notice (check-in):', socketErr.message);
+  }
+
   return res.status(200).json({
     success: true,
     result: populated,
@@ -389,6 +408,19 @@ const logout = async (req, res) => {
     'employee',
     'employeeId name surname photo departmentName designationName email'
   );
+
+  try {
+    const io = getSocketIO ? getSocketIO() : null;
+    if (io && targetEmployee?._id) {
+      io.emit('availability:update', {
+        employeeId: targetEmployee._id.toString(),
+        action: 'check-out',
+        timestamp: Date.now(),
+      });
+    }
+  } catch (socketErr) {
+    console.warn('Socket emission notice (check-out):', socketErr.message);
+  }
 
   return res.status(200).json({
     success: true,

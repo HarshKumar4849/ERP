@@ -4,6 +4,7 @@ import { HomeOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { API_BASE_URL } from '@/config/serverApiConfig';
 import storePersist from '@/redux/storePersist';
+import { getSocket } from '@/utils/socket';
 
 import EmployeeStats from './components/EmployeeStats';
 import EmployeeFilterBar from './components/EmployeeFilterBar';
@@ -143,12 +144,94 @@ export default function EmployeeModule() {
     }
   }, []);
 
+  // 4. Silent Availability Refresh (Batch)
+  const refreshAvailability = useCallback(async (targetIds = null) => {
+    try {
+      const idsToFetch = targetIds || employees.map((e) => e._id || e.id).filter(Boolean);
+      if (!idsToFetch || idsToFetch.length === 0) return;
+
+      const idsParam = Array.isArray(idsToFetch) ? idsToFetch.join(',') : idsToFetch;
+      const res = await axios.get(
+        `${API_BASE_URL}employee/availability?ids=${idsParam}`,
+        getAuthHeaders()
+      );
+
+      if (res.data?.success && res.data?.result) {
+        const updateMap = res.data.result;
+        setEmployees((prev) =>
+          prev.map((emp) => {
+            const key = (emp._id || emp.id)?.toString();
+            if (updateMap[key]) {
+              return { ...emp, availability: updateMap[key] };
+            }
+            return emp;
+          })
+        );
+      }
+    } catch (err) {
+      console.warn('Availability silent sync notice:', err.message);
+    }
+  }, [employees]);
+
   // Initial load
   useEffect(() => {
     fetchStats();
     fetchOrgStructure();
     fetchEmployees(1, 10, filters);
   }, []);
+
+  // 5. Automatic Real-Time & Scheduled Availability Sync
+  useEffect(() => {
+    if (employees.length === 0) return;
+
+    // A. Socket.IO Real-Time Listener
+    const socket = getSocket();
+    const handleAvailabilityUpdate = (data) => {
+      if (!data) return;
+      if (data.employeeId) {
+        refreshAvailability([data.employeeId]);
+      } else {
+        refreshAvailability();
+      }
+    };
+
+    if (socket) {
+      socket.on('availability:update', handleAvailabilityUpdate);
+    }
+
+    // B. Scheduled lightweight polling fallback (every 45 seconds)
+    const intervalId = setInterval(() => {
+      refreshAvailability();
+    }, 45000);
+
+    // C. Date change & Tab focus visibility sync
+    let lastDate = new Date().toDateString();
+    const handleVisibilityOrDate = () => {
+      const currentDate = new Date().toDateString();
+      if (document.visibilityState === 'visible') {
+        if (currentDate !== lastDate) {
+          lastDate = currentDate;
+          // Across midnight: refresh full employee list for new calendar date
+          fetchEmployees(pagination.page, pagination.items, filters);
+        } else {
+          // Re-opened/refocused tab: silently refresh live availability
+          refreshAvailability();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrDate);
+    window.addEventListener('focus', handleVisibilityOrDate);
+
+    return () => {
+      if (socket) {
+        socket.off('availability:update', handleAvailabilityUpdate);
+      }
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityOrDate);
+      window.removeEventListener('focus', handleVisibilityOrDate);
+    };
+  }, [employees.length, refreshAvailability, pagination.page, pagination.items, filters, fetchEmployees]);
 
   // Debounced search / filter update
   const handleFilterChange = (key, value) => {

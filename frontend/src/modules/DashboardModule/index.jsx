@@ -47,6 +47,7 @@ import { selectCurrentAdmin } from '@/redux/auth/selectors';
 import { normalizeRole, ROLES } from '@/utils/rbac';
 import { request } from '@/request';
 import useResponsive from '@/hooks/useResponsive';
+import AvailabilityBadge from '@/components/AvailabilityBadge';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -521,8 +522,19 @@ export default function DashboardModule() {
                               </Avatar>
                             }
                             title={
-                              <span style={{ fontSize: 12, fontWeight: 500 }}>
-                                {item.employee?.name} {item.employee?.surname}
+                              <span style={{ fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{item.employee?.name} {item.employee?.surname}</span>
+                                <AvailabilityBadge
+                                  availability={{
+                                    status: 'present',
+                                    dotColor: 'green',
+                                    label: item.status || 'Present',
+                                    loginTime: item.loginTime,
+                                    logoutTime: item.logoutTime,
+                                    workMode: item.workMode,
+                                  }}
+                                  size={7}
+                                />
                               </span>
                             }
                             description={
@@ -575,8 +587,16 @@ export default function DashboardModule() {
                               </Avatar>
                             }
                             title={
-                              <span style={{ fontSize: 12, fontWeight: 500 }}>
-                                {item.employee?.name} {item.employee?.surname}
+                              <span style={{ fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{item.employee?.name} {item.employee?.surname}</span>
+                                <AvailabilityBadge
+                                  availability={{
+                                    status: 'on_leave',
+                                    dotColor: 'red',
+                                    label: 'On Leave',
+                                  }}
+                                  size={7}
+                                />
                               </span>
                             }
                             description={
