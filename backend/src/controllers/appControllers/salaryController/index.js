@@ -1126,7 +1126,7 @@ const downloadSlipPdf = async (req, res) => {
 };
 
 // =========================================================================
-// 7. AUDIT TRAIL LOGS
+// 7. AUDIT TRAIL LOGS (Global & Individual)
 // =========================================================================
 const audit = async (req, res) => {
   try {
@@ -1137,29 +1137,72 @@ const audit = async (req, res) => {
     if (!authorizedRoles.includes(role)) {
       return res.status(403).json({
         success: false,
+        result: null,
         message: 'Access denied: Employees cannot view salary audit history.',
       });
     }
 
     const SalaryAudit = mongoose.models.SalaryAudit || require('../../../models/appModels/SalaryAudit');
 
+    // Extract target salary identifier from route param or query string
+    const rawTarget = req.params.id || req.query.salaryId || req.query.salary;
+    const targetParam = typeof rawTarget === 'string' ? rawTarget.trim() : rawTarget;
+
     const filter = {};
-    if (req.params.id) {
-      filter.salary = req.params.id;
+
+    // Differentiate between global audit trail and single-salary audit log
+    if (targetParam && targetParam !== 'list' && targetParam !== 'all') {
+      if (!mongoose.Types.ObjectId.isValid(targetParam)) {
+        return res.status(400).json({
+          success: false,
+          result: null,
+          message: `Invalid salary record ID: "${targetParam}". Must be a valid MongoDB ObjectId.`,
+        });
+      }
+      filter.salary = new mongoose.Types.ObjectId(targetParam);
     }
 
-    const logs = await SalaryAudit.find(filter)
-      .sort({ timestamp: -1 })
-      .limit(100)
-      .lean();
+    // Optional filters: action, employee
+    if (req.query.action) {
+      filter.action = req.query.action;
+    }
+    if (req.query.employee && mongoose.Types.ObjectId.isValid(req.query.employee)) {
+      filter.employee = new mongoose.Types.ObjectId(req.query.employee);
+    }
+
+    // Pagination and sorting (newest first)
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, Math.min(200, parseInt(req.query.items || req.query.limit, 10) || 100));
+    const skip = (page - 1) * limit;
+
+    const [total, logs] = await Promise.all([
+      SalaryAudit.countDocuments(filter),
+      SalaryAudit.find(filter)
+        .populate('salary', 'periodLabel month year status netSalary basic totalEarnings totalDeductions slipNumber')
+        .populate('employee', 'name surname employeeId department designation')
+        .populate('performedBy', 'name surname email role')
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const pages = Math.ceil(total / limit) || 1;
+    const pagination = { page, pages, count: total };
 
     return res.status(200).json({
       success: true,
-      result: logs,
+      result: logs || [],
+      pagination,
       message: 'Salary audit logs retrieved successfully.',
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.error('Salary audit retrieval error:', error);
+    return res.status(500).json({
+      success: false,
+      result: null,
+      message: error.message || 'Failed to retrieve salary audit logs.',
+    });
   }
 };
 

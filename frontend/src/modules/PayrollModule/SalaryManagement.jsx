@@ -84,6 +84,7 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
   const [auditDrawerVisible, setAuditDrawerVisible] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [auditContext, setAuditContext] = useState({ isGlobal: true, title: 'Global Salary Audit Trail' });
 
   // Batch Payroll State
   const [batchModalVisible, setBatchModalVisible] = useState(false);
@@ -250,17 +251,34 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
   };
 
   // Open Audit Drawer
-  const handleOpenAudit = async (salaryId) => {
+  const handleOpenAudit = async (salaryId, record = null) => {
     try {
       setAuditLoading(true);
       setAuditDrawerVisible(true);
+      if (salaryId) {
+        setAuditContext({
+          isGlobal: false,
+          title: `Salary Audit Trail: ${record?.employeeName || 'Record'} (${record?.periodLabel || 'Period'})`,
+        });
+      } else {
+        setAuditContext({
+          isGlobal: true,
+          title: 'Global Salary Audit Trail (Organization-wide)',
+        });
+      }
       const url = salaryId ? `salary/audit/${salaryId}` : 'salary/audit';
       const res = await request.list({ entity: url });
       if (res && res.success) {
-        setAuditLogs(res.result || []);
+        setAuditLogs(Array.isArray(res.result) ? res.result : []);
+      } else {
+        setAuditLogs([]);
+        if (res?.message) {
+          message.error(res.message);
+        }
       }
     } catch (err) {
       message.error('Failed to load audit history.');
+      setAuditLogs([]);
     } finally {
       setAuditLoading(false);
     }
@@ -446,7 +464,7 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
                 <Button
                   size="small"
                   icon={<HistoryOutlined />}
-                  onClick={() => handleOpenAudit(r._id)}
+                  onClick={() => handleOpenAudit(r._id, r)}
                 />
               </Tooltip>
 
@@ -913,7 +931,7 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
         title={
           <Space>
             <HistoryOutlined style={{ color: '#002244' }} />
-            <span>Salary Audit Trail & Changes</span>
+            <span>{auditContext.title}</span>
           </Space>
         }
         placement="right"
@@ -950,7 +968,7 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
                         ? 'blue'
                         : item.action === 'DELETED'
                         ? 'red'
-                        : 'purple'
+                        : 'orange'
                     }
                     style={{ fontWeight: 600 }}
                   >
@@ -961,19 +979,27 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
                   </Text>
                 </div>
                 <div style={{ fontWeight: 600, color: '#002244', fontSize: 13 }}>
-                  {item.employeeName} ({item.periodLabel})
+                  {item.employeeName || (item.employee?.name ? `${item.employee.name} ${item.employee.surname || ''}`.trim() : 'Employee')} {item.periodLabel ? `(${item.periodLabel})` : ''}
                 </div>
                 <Paragraph style={{ margin: '6px 0', fontSize: 12, color: '#595959' }}>
                   {item.details}
                 </Paragraph>
+                {item.newValues && (
+                  <div style={{ fontSize: 11, color: '#595959', marginBottom: 6, background: '#f5f5f5', padding: '4px 8px', borderRadius: 4 }}>
+                    {item.newValues.status && <Tag color="default" style={{ fontSize: 10, marginRight: 6 }}>Status: {item.newValues.status}</Tag>}
+                    {item.newValues.netSalary !== undefined && <span style={{ marginRight: 8 }}>Net: {formatCurrency(item.newValues.netSalary)}</span>}
+                    {item.previousValues?.status && <span style={{ color: '#8c8c8c' }}>(Previous: {item.previousValues.status})</span>}
+                  </div>
+                )}
                 <div style={{ fontSize: 11, color: '#8c8c8c' }}>
-                  Logged by: <strong>{item.performedByName}</strong> ({item.performedByRole})
+                  Logged by: <strong>{item.performedByName || item.performedBy?.name || 'System'}</strong> ({item.performedByRole || item.performedBy?.role || 'Admin'})
                 </div>
               </List.Item>
             )}
           />
         )}
-      
+      </Drawer>
+
       {/* Batch Payroll Modal */}
       <Modal
         title={
@@ -1182,8 +1208,6 @@ export default function SalaryManagement({ userRole, currentAdmin }) {
           </div>
         )}
       </Modal>
-
-</Drawer>
     </div>
   );
 }

@@ -177,7 +177,8 @@ const request = {
         entity.includes('/events') ||
         entity.includes('/reminders') ||
         entity.includes('/today') ||
-        entity.includes('/monthly')
+        entity.includes('/monthly') ||
+        entity.includes('/audit')
       ) {
         url = query.length > 1 ? `${entity}${entity.includes('?') ? '&' + query.slice(1) : query}` : entity;
       } else {

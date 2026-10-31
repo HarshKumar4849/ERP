@@ -306,6 +306,22 @@ if (appControllers['salaryController']) {
     catchErrors(appControllers['salaryController'].generateSlip)
   );
 
+  // Salary Audit Trail endpoints - static routes declared before parameterized routes
+  router.route('/salary/audit/list').get(
+    rbacMiddleware('salary', 'read'),
+    catchErrors(appControllers['salaryController'].audit)
+  );
+
+  router.route('/salary/audit').get(
+    rbacMiddleware('salary', 'read'),
+    catchErrors(appControllers['salaryController'].audit)
+  );
+
+  router.route('/salary/audit/:id/list').get(
+    rbacMiddleware('salary', 'read'),
+    catchErrors(appControllers['salaryController'].audit)
+  );
+
   router.route('/salary/audit/:id').get(
     rbacMiddleware('salary', 'read'),
     catchErrors(appControllers['salaryController'].audit)
@@ -319,11 +335,6 @@ if (appControllers['salaryController']) {
   router.route('/salary/calculate-preview').post(
     rbacMiddleware('salary', 'read'),
     catchErrors(appControllers['salaryController'].calculatePreview)
-  );
-
-  router.route('/salary/audit').get(
-    rbacMiddleware('salary', 'read'),
-    catchErrors(appControllers['salaryController'].audit)
   );
 }
 
