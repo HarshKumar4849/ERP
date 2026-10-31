@@ -9,6 +9,7 @@ const ACTIONS = {
   SEARCH: 'search',
   FILTER: 'filter',
   SUMMARY: 'summary',
+  VERIFY: 'verify',
 };
 
 const ALL_ACTIONS = Object.values(ACTIONS);

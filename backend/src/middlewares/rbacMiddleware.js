@@ -95,15 +95,85 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
     }
 
     // 2. Resource-Level Ownership & Confidentiality Enforcement for Private Document Vault
-    // Invariant: Private employee documents are accessible to:
-    // - ADMIN (full enterprise visibility for system management)
-    // - The owning employee or the user who uploaded the document
-    // (HR and other employees are denied access to another employee's private confidential documents)
+    // Policy:
+    // - ADMIN: Universal full access (view, download, verify, reject, upload, delete across all categories).
+    // - HR: Can view, download, verify, and reject permitted employee documents.
+    //       STRICTLY DENIED from accessing Salary Documents or Bank Details across all endpoints.
+    //       CANNOT upload on behalf of other employees or delete documents.
+    //       CANNOT verify their own documents (self-verification prevention).
+    // - EMPLOYEE: Can view and upload own documents only. Denied all other employee records and verification.
     if (resource === 'document') {
-      const isPrivileged = role === ROLES.ADMIN;
+      const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
+      const DocumentModel = mongoose.model('Document');
+      const EmployeeModel = mongoose.model('Employee');
 
-      if (!isPrivileged) {
-        if (action === 'read' || action === 'download') {
+      // A. READ & DOWNLOAD
+      if (action === 'read' || action === 'download') {
+        if (targetId) {
+          if (!mongoose.Types.ObjectId.isValid(targetId)) {
+            return res.status(400).json({
+              success: false,
+              result: null,
+              message: 'Invalid document id.',
+            });
+          }
+          const docRecord = await DocumentModel.findOne({ _id: targetId, removed: false }).populate('employee');
+          if (!docRecord) {
+            return res.status(404).json({
+              success: false,
+              result: null,
+              message: 'Document not found.',
+            });
+          }
+
+          if (role === ROLES.HR) {
+            if (RESTRICTED_HR_CATEGORIES.includes(docRecord.documentType)) {
+              return res.status(403).json({
+                success: false,
+                result: null,
+                message: `Access denied: HR cannot access restricted document category '${docRecord.documentType}'.`,
+              });
+            }
+            return next();
+          }
+
+          if (role === ROLES.EMPLOYEE) {
+            const ownEmp = await EmployeeModel.findOne({
+              $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+              removed: false,
+            });
+            const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
+            const empUser = docRecord.employee?.user ? docRecord.employee.user.toString() : '';
+            const empId = docRecord.employee?._id
+              ? docRecord.employee._id.toString()
+              : docRecord.employee
+              ? docRecord.employee.toString()
+              : '';
+            const empEmail = docRecord.employee?.email ? docRecord.employee.email.toLowerCase() : '';
+            const uploaderId = docRecord.uploadedBy ? docRecord.uploadedBy.toString() : '';
+
+            const isOwner =
+              empUser === userIdStr ||
+              empId === userIdStr ||
+              (ownEmpId && empId === ownEmpId) ||
+              (empEmail && user.email && empEmail === user.email.toLowerCase()) ||
+              uploaderId === userIdStr;
+
+            if (!isOwner) {
+              return res.status(403).json({
+                success: false,
+                result: null,
+                message: "Access denied: You cannot access another employee's confidential documents.",
+              });
+            }
+            return next();
+          }
+        }
+      }
+
+      // B. VERIFY & REJECT
+      if (action === 'verify') {
+        if (role === ROLES.HR) {
           if (targetId) {
             if (!mongoose.Types.ObjectId.isValid(targetId)) {
               return res.status(400).json({
@@ -112,43 +182,54 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
                 message: 'Invalid document id.',
               });
             }
-            const DocumentModel = mongoose.model('Document');
-            const EmployeeModel = mongoose.model('Employee');
             const docRecord = await DocumentModel.findOne({ _id: targetId, removed: false }).populate('employee');
-            if (docRecord) {
-              const ownEmp = await EmployeeModel.findOne({
-                $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
-                removed: false,
+            if (!docRecord) {
+              return res.status(404).json({
+                success: false,
+                result: null,
+                message: 'Document not found.',
               });
-              const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
-              const empUser = docRecord.employee?.user ? docRecord.employee.user.toString() : '';
-              const empId = docRecord.employee?._id
-                ? docRecord.employee._id.toString()
-                : docRecord.employee
-                ? docRecord.employee.toString()
-                : '';
-              const empEmail = docRecord.employee?.email ? docRecord.employee.email.toLowerCase() : '';
-              const uploaderId = docRecord.uploadedBy ? docRecord.uploadedBy.toString() : '';
+            }
+            // Block HR from verifying restricted categories
+            if (RESTRICTED_HR_CATEGORIES.includes(docRecord.documentType)) {
+              return res.status(403).json({
+                success: false,
+                result: null,
+                message: `Access denied: HR cannot verify restricted category '${docRecord.documentType}'.`,
+              });
+            }
+            // Prevent self-verification: HR cannot verify their own document
+            const ownEmp = await EmployeeModel.findOne({
+              $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+              removed: false,
+            });
+            const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
+            const docEmpId = docRecord.employee?._id ? docRecord.employee._id.toString() : docRecord.employee ? docRecord.employee.toString() : '';
+            const uploaderId = docRecord.uploadedBy ? docRecord.uploadedBy.toString() : '';
 
-              const isOwner =
-                empUser === userIdStr ||
-                empId === userIdStr ||
-                (ownEmpId && empId === ownEmpId) ||
-                (empEmail && user.email && empEmail === user.email.toLowerCase()) ||
-                uploaderId === userIdStr;
-
-              if (!isOwner) {
-                return res.status(403).json({
-                  success: false,
-                  result: null,
-                  message: "Access denied: You cannot access another employee's confidential documents.",
-                });
-              }
+            if ((ownEmpId && docEmpId === ownEmpId) || uploaderId === userIdStr) {
+              return res.status(403).json({
+                success: false,
+                result: null,
+                message: 'Access denied: You cannot verify your own documents.',
+              });
             }
           }
+          return next();
         }
-        if (action === 'list' || action === 'listAll' || action === 'filter' || action === 'search' || action === 'summary') {
-          const EmployeeModel = mongoose.model('Employee');
+
+        if (role === ROLES.EMPLOYEE) {
+          return res.status(403).json({
+            success: false,
+            result: null,
+            message: 'Access denied: Employees cannot verify documents.',
+          });
+        }
+      }
+
+      // C. LIST, SEARCH, FILTER, SUMMARY
+      if (action === 'list' || action === 'listAll' || action === 'filter' || action === 'search' || action === 'summary') {
+        if (role === ROLES.EMPLOYEE) {
           const empDoc = await EmployeeModel.findOne({
             $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
             removed: false,
@@ -159,26 +240,38 @@ const rbacMiddleware = (resource, action) => async (req, res, next) => {
             req.query.employee = user._id.toString();
           }
         }
-        if (action === 'create') {
-          const EmployeeModel = mongoose.model('Employee');
-          const empDoc = await EmployeeModel.findOne({
-            $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
-            removed: false,
-          });
-          if (empDoc) {
-            req.body.employee = empDoc._id.toString();
-          } else {
-            req.body.employee = user._id.toString();
-          }
-          req.body.uploadedBy = user._id.toString();
+        // For HR: do NOT override req.query.employee; controller will filter out RESTRICTED_HR_CATEGORIES
+      }
+
+      // D. CREATE (UPLOAD)
+      if (action === 'create') {
+        // Non-admin (both HR and Employee) cannot upload on behalf of other employees
+        const empDoc = await EmployeeModel.findOne({
+          $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+          removed: false,
+        });
+        if (empDoc) {
+          req.body.employee = empDoc._id.toString();
+        } else {
+          req.body.employee = user._id.toString();
         }
-        if (action === 'update' || action === 'delete' || action === 'verify') {
-          return res.status(403).json({
-            success: false,
-            result: null,
-            message: 'Access denied: Only administrators can update, verify, or delete official private documents.',
-          });
-        }
+        req.body.uploadedBy = user._id.toString();
+      }
+
+      // E. METADATA UPDATE & DELETE
+      if (action === 'update') {
+        return res.status(403).json({
+          success: false,
+          result: null,
+          message: 'Access denied: Only administrators can update official document metadata.',
+        });
+      }
+      if (action === 'delete') {
+        return res.status(403).json({
+          success: false,
+          result: null,
+          message: 'Access denied: Only administrators can delete official documents.',
+        });
       }
     }
 
