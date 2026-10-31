@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { FILE_BASE_URL } from '@/config/serverApiConfig';
+import AvailabilityBadge from '@/components/AvailabilityBadge';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -94,10 +95,19 @@ export default function EmployeeTable({
             />
             <div>
               <div
-                style={{ fontWeight: 600, fontSize: 14, cursor: 'pointer', color: '#1677ff' }}
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  color: '#1677ff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
                 onClick={() => onViewProfile(record)}
               >
-                {fullName}
+                <span>{fullName}</span>
+                <AvailabilityBadge availability={record.availability} />
               </div>
               <Space size={4} style={{ marginTop: 2 }}>
                 <Tag color="geekblue" style={{ fontSize: 11, padding: '0 6px', margin: 0 }}>

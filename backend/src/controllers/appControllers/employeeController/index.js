@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { ROLES, normalizeRole } = require('../../../rbac/roles');
+const { computeEmployeesAvailability } = require('./availabilityHelper');
 
 const isEmployeeRole = (req) => {
   const role = req.userRole || (req.user && req.user.role);
@@ -790,10 +791,21 @@ const employeeController = {
       Employee.countDocuments(filterConditions),
     ]);
 
+    // Bulk compute live availability for the current page of employees (no N+1 queries)
+    const empIds = docs.map((emp) => emp._id);
+    const availabilityMap = await computeEmployeesAvailability(empIds);
+
     const result = docs.map((emp) => ({
       ...emp,
       id: emp._id.toString(),
       fullName: emp.fullName || (emp.name && emp.surname ? `${emp.name} ${emp.surname}`.trim() : (emp.name || '')),
+      availability: availabilityMap[emp._id.toString()] || {
+        status: 'not_checked_in',
+        dotColor: 'grey',
+        conflict: false,
+        label: 'Not Checked In',
+        date: null,
+      },
     }));
 
     const pages = Math.ceil(count / limit);
@@ -828,16 +840,64 @@ const employeeController = {
       .lean()
       .exec();
 
+    const empIds = docs.map((emp) => emp._id);
+    const availabilityMap = await computeEmployeesAvailability(empIds);
+
     const result = docs.map((emp) => ({
       ...emp,
       id: emp._id.toString(),
       fullName: emp.fullName || (emp.name && emp.surname ? `${emp.name} ${emp.surname}`.trim() : (emp.name || '')),
+      availability: availabilityMap[emp._id.toString()] || {
+        status: 'not_checked_in',
+        dotColor: 'grey',
+        conflict: false,
+        label: 'Not Checked In',
+        date: null,
+      },
     }));
 
     return res.status(200).json({
       success: true,
       result,
       message: 'All employees retrieved.',
+    });
+  },
+
+  // ==========================================
+  // LIVE AVAILABILITY STATUS (BATCH ENDPOINT)
+  // ==========================================
+  availability: async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
+    const Employee = mongoose.model('Employee');
+    let empIds = [];
+
+    if (isEmployeeRole(req)) {
+      // RBAC ENFORCEMENT: Employees can only view their own live status
+      const callingEmp = await resolveOrCreateEmployee(req.user);
+      if (!callingEmp) {
+        return res.status(404).json({ success: false, result: {}, message: 'Employee profile not found.' });
+      }
+      empIds = [callingEmp._id];
+    } else {
+      // HR / Admin: Can request specific employee IDs or all active employees
+      if (req.query.ids) {
+        empIds = req.query.ids
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => mongoose.Types.ObjectId.isValid(id));
+      } else {
+        const allActive = await Employee.find({ removed: false }).select('_id').lean();
+        empIds = allActive.map((e) => e._id);
+      }
+    }
+
+    const availabilityMap = await computeEmployeesAvailability(empIds, req.query.date);
+
+    return res.status(200).json({
+      success: true,
+      result: availabilityMap,
+      message: 'Employee availability retrieved successfully.',
     });
   },
 

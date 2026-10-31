@@ -10,6 +10,7 @@ import {
   ApartmentOutlined,
 } from '@ant-design/icons';
 import { FILE_BASE_URL } from '@/config/serverApiConfig';
+import AvailabilityBadge from '@/components/AvailabilityBadge';
 
 const { Text, Title } = Typography;
 
@@ -137,10 +138,14 @@ export default function EmployeeGrid({
                       fontWeight: 600,
                       color: '#262626',
                       cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                     onClick={() => onViewProfile(emp)}
                   >
-                    {fullName}
+                    <span>{fullName}</span>
+                    <AvailabilityBadge availability={emp.availability} />
                   </div>
                   <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
                     {emp.designationName || (emp.designation?.name) || 'Team Member'}

@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 const { ROLES } = require('../../../rbac/roles');
+let getSocketIO;
+try {
+  getSocketIO = require('../../../socket').getSocketIO;
+} catch (e) {
+  getSocketIO = () => null;
+}
 
 // Helper to resolve Employee from authenticated user
 const resolveEmployee = async (user) => {
@@ -286,6 +292,19 @@ const cancel = async (req, res) => {
     }
     balanceDoc.markModified('balances');
     await balanceDoc.save();
+  }
+
+  try {
+    const io = getSocketIO ? getSocketIO() : null;
+    if (io && updatedLeave?.employee) {
+      io.emit('availability:update', {
+        employeeId: updatedLeave.employee.toString(),
+        action: 'leave-cancelled',
+        timestamp: Date.now(),
+      });
+    }
+  } catch (socketErr) {
+    console.warn('Socket emission notice (leave-cancelled):', socketErr.message);
   }
 
   return res.status(200).json({
@@ -593,6 +612,20 @@ const hrApproval = async (req, res) => {
   const populated = await Leave.findById(updatedLeave._id)
     .populate('employee', 'employeeId name surname photo departmentName designationName email')
     .populate('reportingManager', 'employeeId name surname photo departmentName designationName email');
+
+  try {
+    const io = getSocketIO ? getSocketIO() : null;
+    if (io && updatedLeave?.employee) {
+      io.emit('availability:update', {
+        employeeId: updatedLeave.employee.toString(),
+        action: 'leave-approval',
+        status: updatedLeave.status,
+        timestamp: Date.now(),
+      });
+    }
+  } catch (socketErr) {
+    console.warn('Socket emission notice (leave-approval):', socketErr.message);
+  }
 
   return res.status(200).json({
     success: true,
