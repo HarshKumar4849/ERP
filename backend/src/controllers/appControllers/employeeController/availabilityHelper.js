@@ -71,7 +71,7 @@ function determineSingleEmployeeAvailability({
   holidayEvent,
   dateInfo,
 }) {
-  const { dateString, isWeekend } = dateInfo;
+  const { dateString, isWeekend } = dateInfo || getCompanyDateInfo();
 
   // 1. Verify valid attendance for today
   const hasAttendance = Boolean(
@@ -235,108 +235,125 @@ function determineSingleEmployeeAvailability({
  * @param {Date|string|number} targetDate 
  */
 async function computeEmployeesAvailability(employeeIds = [], targetDate = new Date()) {
-  if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
-    return {};
-  }
-
-  const Attendance = mongoose.models.Attendance || require('../../../models/appModels/Attendance');
-  const Leave = mongoose.models.Leave || require('../../../models/appModels/Leave');
-  const Event = mongoose.models.Event || require('../../../models/appModels/Event');
-
-  const dateInfo = getCompanyDateInfo(targetDate);
-  const { dateString, queryStart, queryEnd, startOfDay, endOfDay } = dateInfo;
-
-  // Filter valid ObjectId formats
-  const validEmpIds = employeeIds
-    .map((id) => (id ? id.toString() : ''))
-    .filter((idStr) => mongoose.Types.ObjectId.isValid(idStr))
-    .map((idStr) => new mongoose.Types.ObjectId(idStr));
-
-  if (validEmpIds.length === 0) {
-    return {};
-  }
-
-  // Execute 3 concurrent bulk queries
-  const [attendances, approvedLeaves, holidayEvents] = await Promise.all([
-    // 1. Attendance records for dateString
-    Attendance.find({
-      employee: { $in: validEmpIds },
-      dateString,
-      removed: false,
-    })
-      .select('employee dateString loginTime logoutTime clockIn clockOut status workMode isHalfDayDeclaration')
-      .lean()
-      .exec(),
-
-    // 2. Approved leave records covering today
-    Leave.find({
-      employee: { $in: validEmpIds },
-      removed: false,
-      status: { $in: ['Approved', 'approved'] },
-      fromDate: { $lte: queryEnd },
-      toDate: { $gte: queryStart },
-    })
-      .select('employee leaveType daysCount fromDate toDate status')
-      .lean()
-      .exec(),
-
-    // 3. Company Holiday/Festival for today
-    Event.find({
-      removed: false,
-      eventType: { $in: ['Holiday', 'Festival'] },
-      $or: [
-        { startDate: { $lte: queryEnd }, endDate: { $gte: queryStart } },
-        { date: { $gte: queryStart, $lte: queryEnd } },
-      ],
-    })
-      .select('title eventName eventType startDate endDate date')
-      .lean()
-      .exec(),
-  ]);
-
-  // Map attendances by employeeId string
-  const attendanceMap = new Map();
-  for (const att of attendances) {
-    if (att.employee) {
-      attendanceMap.set(att.employee.toString(), att);
+  try {
+    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return {};
     }
-  }
 
-  // Map approved leaves by employeeId string (an employee may have multiple records)
-  const leaveMap = new Map();
-  for (const lv of approvedLeaves) {
-    if (lv.employee) {
-      const empKey = lv.employee.toString();
-      if (!leaveMap.has(empKey)) {
-        leaveMap.set(empKey, []);
-      }
-      // Ensure date overlap with today in local time
-      const lvFrom = new Date(lv.fromDate);
-      const lvTo = new Date(lv.toDate);
-      if (lvFrom <= endOfDay && lvTo >= startOfDay) {
-        leaveMap.get(empKey).push(lv);
+    const Attendance = mongoose.models.Attendance || require('../../../models/appModels/Attendance');
+    const Leave = mongoose.models.Leave || require('../../../models/appModels/Leave');
+    const Event = mongoose.models.Event || require('../../../models/appModels/Event');
+
+    const dateInfo = getCompanyDateInfo(targetDate);
+    const { dateString, queryStart, queryEnd, startOfDay, endOfDay } = dateInfo;
+
+    // Filter valid ObjectId formats
+    const validEmpIds = employeeIds
+      .map((id) => (id ? id.toString() : ''))
+      .filter((idStr) => mongoose.Types.ObjectId.isValid(idStr))
+      .map((idStr) => new mongoose.Types.ObjectId(idStr));
+
+    if (validEmpIds.length === 0) {
+      return {};
+    }
+
+    // Execute 3 concurrent bulk queries with individual error isolation
+    const [attendances, approvedLeaves, holidayEvents] = await Promise.all([
+      // 1. Attendance records for dateString
+      Attendance.find({
+        employee: { $in: validEmpIds },
+        dateString,
+        removed: false,
+      })
+        .select('employee dateString loginTime logoutTime clockIn clockOut status workMode isHalfDayDeclaration')
+        .lean()
+        .exec()
+        .catch((err) => {
+          console.warn('Availability attendance query notice:', err.message);
+          return [];
+        }),
+
+      // 2. Approved leave records covering today
+      Leave.find({
+        employee: { $in: validEmpIds },
+        removed: false,
+        status: { $in: ['Approved', 'approved'] },
+        fromDate: { $lte: queryEnd },
+        toDate: { $gte: queryStart },
+      })
+        .select('employee leaveType daysCount fromDate toDate status')
+        .lean()
+        .exec()
+        .catch((err) => {
+          console.warn('Availability leave query notice:', err.message);
+          return [];
+        }),
+
+      // 3. Company Holiday/Festival for today
+      Event.find({
+        removed: false,
+        eventType: { $in: ['Holiday', 'Festival'] },
+        $or: [
+          { startDate: { $lte: queryEnd }, endDate: { $gte: queryStart } },
+          { date: { $gte: queryStart, $lte: queryEnd } },
+        ],
+      })
+        .select('title eventName eventType startDate endDate date')
+        .lean()
+        .exec()
+        .catch((err) => {
+          console.warn('Availability holiday query notice:', err.message);
+          return [];
+        }),
+    ]);
+
+    // Map attendances by employeeId string
+    const attendanceMap = new Map();
+    for (const att of (attendances || [])) {
+      if (att && att.employee) {
+        attendanceMap.set(att.employee.toString(), att);
       }
     }
+
+    // Map approved leaves by employeeId string (an employee may have multiple records)
+    const leaveMap = new Map();
+    for (const lv of (approvedLeaves || [])) {
+      if (lv && lv.employee) {
+        const empKey = lv.employee.toString();
+        if (!leaveMap.has(empKey)) {
+          leaveMap.set(empKey, []);
+        }
+        // Ensure date overlap with today in local time
+        const lvFrom = new Date(lv.fromDate);
+        const lvTo = new Date(lv.toDate);
+        if (lvFrom <= endOfDay && lvTo >= startOfDay) {
+          leaveMap.get(empKey).push(lv);
+        }
+      }
+    }
+
+    const holidayEvent = holidayEvents && holidayEvents.length > 0 ? holidayEvents[0] : null;
+
+    // Build result dictionary
+    const availabilityMap = {};
+    for (const empId of validEmpIds) {
+      const idStr = empId.toString();
+      const attendanceRecord = attendanceMap.get(idStr) || null;
+      const empLeaves = leaveMap.get(idStr) || [];
+
+      availabilityMap[idStr] = determineSingleEmployeeAvailability({
+        attendanceRecord,
+        approvedLeaves: empLeaves,
+        holidayEvent,
+        dateInfo,
+      });
+    }
+
+    return availabilityMap;
+  } catch (err) {
+    console.error('Fatal error in computeEmployeesAvailability:', err);
+    return {};
   }
-
-  const holidayEvent = holidayEvents && holidayEvents.length > 0 ? holidayEvents[0] : null;
-
-  // Build result dictionary
-  const availabilityMap = {};
-  for (const empId of validEmpIds) {
-    const idStr = empId.toString();
-    const attendanceRecord = attendanceMap.get(idStr) || null;
-    const empLeaves = leaveMap.get(idStr) || [];
-
-    availabilityMap[idStr] = determineSingleEmployeeAvailability({
-      attendanceRecord,
-      approvedLeaves: empLeaves,
-      holidayEvent,
-      dateInfo,
-    });
-  }
-
-  return availabilityMap;
 }
 
 module.exports = {
