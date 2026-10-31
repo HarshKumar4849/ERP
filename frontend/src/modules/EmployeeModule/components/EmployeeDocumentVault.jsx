@@ -125,8 +125,23 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
   const [verifyForm] = Form.useForm();
 
   const currentAdmin = useSelector(selectCurrentAdmin);
-  const userRole = normalizeRole(currentAdmin?.role);
-  const isPrivileged = [ROLES.ADMIN, ROLES.HR].includes(userRole);
+  const userRole = normalizeRole(currentAdmin?.role || (currentAdmin?.department === 'HR' ? 'HR' : ''));
+  const isAdmin = userRole === ROLES.ADMIN;
+  const isHR = userRole === ROLES.HR;
+  const isEmployee = userRole === ROLES.EMPLOYEE;
+
+  const currentUserIdStr = currentAdmin?._id ? String(currentAdmin._id) : '';
+  const isOwnVault =
+    (employeeRecord?.user && String(employeeRecord.user) === currentUserIdStr) ||
+    (employeeRecord?._id && String(employeeRecord._id) === currentUserIdStr) ||
+    (employeeRecord?.email && currentAdmin?.email && employeeRecord.email.toLowerCase() === currentAdmin.email.toLowerCase()) ||
+    (employeeId && String(employeeId) === currentUserIdStr);
+
+  const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
+  const availableDocTypes = isHR
+    ? DOCUMENT_TYPES.filter((t) => !RESTRICTED_HR_CATEGORIES.includes(t))
+    : DOCUMENT_TYPES;
+  const canUpload = isAdmin || isOwnVault;
 
   const getAuthHeaders = () => {
     const auth = storePersist.get('auth');
@@ -446,34 +461,34 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
               onClick={() => handleDownload(record, 'attachment')}
             />
           </Tooltip>
-          {isPrivileged && (
-            <>
-              <Tooltip title="Verify / Review">
-                <Button
-                  size="small"
-                  shape="circle"
-                  icon={<FileProtectOutlined style={{ color: '#1677ff' }} />}
-                  onClick={() => {
-                    setVerifyingDoc(record);
-                    verifyForm.setFieldsValue({
-                      verificationStatus: record.verificationStatus || 'Verified',
-                      verificationRemarks: record.verificationRemarks || '',
-                    });
-                    setVerifyModalVisible(true);
-                  }}
-                />
-              </Tooltip>
-              <Popconfirm
-                title="Remove document from vault?"
-                description="This marks the document record as deleted."
-                okText="Delete"
-                cancelText="Cancel"
-                okButtonProps={{ danger: true }}
-                onConfirm={() => handleDelete(record)}
-              >
-                <Button size="small" shape="circle" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </>
+          {(isAdmin || (isHR && !isOwnVault && !RESTRICTED_HR_CATEGORIES.includes(record.documentType))) && (
+            <Tooltip title="Verify / Review">
+              <Button
+                size="small"
+                shape="circle"
+                icon={<FileProtectOutlined style={{ color: '#1677ff' }} />}
+                onClick={() => {
+                  setVerifyingDoc(record);
+                  verifyForm.setFieldsValue({
+                    verificationStatus: record.verificationStatus || 'Verified',
+                    verificationRemarks: record.verificationRemarks || '',
+                  });
+                  setVerifyModalVisible(true);
+                }}
+              />
+            </Tooltip>
+          )}
+          {isAdmin && (
+            <Popconfirm
+              title="Remove document from vault?"
+              description="This marks the document record as deleted."
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => handleDelete(record)}
+            >
+              <Button size="small" shape="circle" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -539,7 +554,7 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
             placeholder="Document Type"
           >
             <Option value="all">All Document Types</Option>
-            {DOCUMENT_TYPES.map((t) => (
+            {availableDocTypes.map((t) => (
               <Option key={t} value={t}>{t}</Option>
             ))}
           </Select>
@@ -559,18 +574,20 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
           </Select>
         </Space>
 
-        <Button
-          type="primary"
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            uploadForm.resetFields();
-            setUploadFileList([]);
-            setUploadModalVisible(true);
-          }}
-        >
-          Upload Document
-        </Button>
+        {canUpload && (
+          <Button
+            type="primary"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              uploadForm.resetFields();
+              setUploadFileList([]);
+              setUploadModalVisible(true);
+            }}
+          >
+            Upload Document
+          </Button>
+        )}
       </div>
 
       {/* Documents Table */}
@@ -602,7 +619,7 @@ export default function EmployeeDocumentVault({ employeeId, employeeRecord }) {
             rules={[{ required: true, message: 'Please select document type' }]}
           >
             <Select placeholder="Select Document Type" aria-label="Document type" showSearch>
-              {DOCUMENT_TYPES.map((t) => (
+              {availableDocTypes.map((t) => (
                 <Option key={t} value={t}>{t}</Option>
               ))}
             </Select>

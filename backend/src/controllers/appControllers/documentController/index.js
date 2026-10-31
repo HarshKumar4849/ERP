@@ -303,6 +303,18 @@ const documentController = {
       });
     }
 
+    const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
+    const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
+
+    if (userRole === ROLES.HR && RESTRICTED_HR_CATEGORIES.includes(doc.documentType)) {
+      return res.status(403).json({
+        success: false,
+        result: null,
+        message: `Access denied: HR cannot access restricted document category '${doc.documentType}'.`,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       result: doc,
@@ -332,6 +344,18 @@ const documentController = {
         success: false,
         result: null,
         message: 'Document file not found.',
+      });
+    }
+
+    const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
+    const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
+
+    if (userRole === ROLES.HR && RESTRICTED_HR_CATEGORIES.includes(doc.documentType)) {
+      return res.status(403).json({
+        success: false,
+        result: null,
+        message: `Access denied: HR cannot access restricted document category '${doc.documentType}'.`,
       });
     }
 
@@ -370,7 +394,7 @@ const documentController = {
   },
 
   // ==========================================
-  // VERIFY DOCUMENT (ADMIN ONLY)
+  // VERIFY DOCUMENT (ADMIN & HR)
   // ==========================================
   verify: async (req, res) => {
     const Document = mongoose.model('Document');
@@ -395,6 +419,56 @@ const documentController = {
     }
 
     const user = req.user || req.admin;
+    const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
+
+    if (![ROLES.ADMIN, ROLES.HR].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        result: null,
+        message: 'Access denied: Employees cannot verify documents.',
+      });
+    }
+
+    const doc = await Document.findOne({ _id: id, removed: false }).populate('employee');
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        result: null,
+        message: 'Document not found.',
+      });
+    }
+
+    const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
+
+    // HR cannot verify restricted categories
+    if (userRole === ROLES.HR && RESTRICTED_HR_CATEGORIES.includes(doc.documentType)) {
+      return res.status(403).json({
+        success: false,
+        result: null,
+        message: `Access denied: HR cannot verify restricted category '${doc.documentType}'.`,
+      });
+    }
+
+    // Prevent self-verification: non-admin users cannot verify their own documents
+    if (userRole !== ROLES.ADMIN) {
+      const Employee = mongoose.model('Employee');
+      const ownEmp = await Employee.findOne({
+        $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
+        removed: false,
+      });
+      const ownEmpId = ownEmp ? ownEmp._id.toString() : '';
+      const docEmpId = doc.employee?._id ? doc.employee._id.toString() : doc.employee ? doc.employee.toString() : '';
+      const uploaderId = doc.uploadedBy ? doc.uploadedBy.toString() : '';
+
+      if ((ownEmpId && docEmpId === ownEmpId) || uploaderId === user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          result: null,
+          message: 'Access denied: You cannot verify your own documents.',
+        });
+      }
+    }
+
     const verifiedByName = user ? `${user.name || ''} ${user.surname || ''}`.trim() : 'Administrator';
 
     const updateData = {
@@ -410,14 +484,6 @@ const documentController = {
       .populate('employee', 'name surname employeeId departmentName designationName photo email')
       .populate('uploadedBy', 'name surname email')
       .populate('verifiedBy', 'name surname email');
-
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        result: null,
-        message: 'Document not found.',
-      });
-    }
 
     return res.status(200).json({
       success: true,
@@ -526,9 +592,9 @@ const documentController = {
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
-    const isPrivileged = [ROLES.ADMIN].includes(userRole);
+    const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
 
-    if (!isPrivileged && user) {
+    if (userRole === ROLES.EMPLOYEE) {
       const Employee = mongoose.model('Employee');
       const ownEmp = await Employee.findOne({
         $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
@@ -540,33 +606,45 @@ const documentController = {
         if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
       }
       andConditions.push({ $or: orClauses });
-    } else if (employee && employee !== 'all') {
-      if (mongoose.Types.ObjectId.isValid(employee)) {
-        const Employee = mongoose.model('Employee');
-        const matchedEmp = await Employee.findOne({
-          $or: [{ _id: employee }, { user: employee }],
-          removed: false,
-        });
-        if (matchedEmp) {
-          andConditions.push({
-            $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+    } else {
+      // ADMIN and HR can query documents by employee
+      if (employee && employee !== 'all') {
+        if (mongoose.Types.ObjectId.isValid(employee)) {
+          const Employee = mongoose.model('Employee');
+          const matchedEmp = await Employee.findOne({
+            $or: [{ _id: employee }, { user: employee }],
+            removed: false,
           });
+          if (matchedEmp) {
+            andConditions.push({
+              $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+            });
+          } else {
+            andConditions.push({ employee: new mongoose.Types.ObjectId(employee) });
+          }
         } else {
-          andConditions.push({ employee: employee });
+          andConditions.push({
+            $or: [
+              { employeeId: new RegExp(`^${employee}$`, 'i') },
+              { employeeName: new RegExp(employee, 'i') },
+            ],
+          });
         }
-      } else {
-        andConditions.push({
-          $or: [
-            { employeeId: new RegExp(`^${employee}$`, 'i') },
-            { employeeName: new RegExp(employee, 'i') },
-          ],
-        });
+      }
+
+      // HR cannot access Salary Documents or Bank Details across any endpoint
+      if (userRole === ROLES.HR) {
+        andConditions.push({ documentType: { $nin: RESTRICTED_HR_CATEGORIES } });
       }
     }
 
     // Document Type filter
     if (documentType && documentType !== 'all') {
-      andConditions.push({ documentType });
+      if (userRole === ROLES.HR && RESTRICTED_HR_CATEGORIES.includes(documentType)) {
+        andConditions.push({ documentType: '__BLOCKED_RESTRICTED_CATEGORY__' });
+      } else {
+        andConditions.push({ documentType });
+      }
     }
 
     // Verification Status filter
@@ -657,11 +735,11 @@ const documentController = {
 
     const user = req.user || req.admin;
     const userRole = user ? normalizeRole(user.role || (user.department === 'HR' ? 'HR' : '')) : '';
-    const isPrivileged = [ROLES.ADMIN].includes(userRole);
+    const RESTRICTED_HR_CATEGORIES = ['Salary Documents', 'Bank Details'];
 
     const andConditions = [{ removed: false }];
 
-    if (!isPrivileged && user) {
+    if (userRole === ROLES.EMPLOYEE) {
       const Employee = mongoose.model('Employee');
       const ownEmp = await Employee.findOne({
         $or: [{ user: user._id }, { email: user.email }, { personalEmail: user.email }],
@@ -673,20 +751,27 @@ const documentController = {
         if (ownEmp.employeeId) orClauses.push({ employeeId: ownEmp.employeeId });
       }
       andConditions.push({ $or: orClauses });
-    } else if (req.query.employee && req.query.employee !== 'all') {
-      if (mongoose.Types.ObjectId.isValid(req.query.employee)) {
-        const Employee = mongoose.model('Employee');
-        const matchedEmp = await Employee.findOne({
-          $or: [{ _id: req.query.employee }, { user: req.query.employee }],
-          removed: false,
-        });
-        if (matchedEmp) {
-          andConditions.push({
-            $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+    } else {
+      if (req.query.employee && req.query.employee !== 'all') {
+        if (mongoose.Types.ObjectId.isValid(req.query.employee)) {
+          const Employee = mongoose.model('Employee');
+          const matchedEmp = await Employee.findOne({
+            $or: [{ _id: req.query.employee }, { user: req.query.employee }],
+            removed: false,
           });
-        } else {
-          andConditions.push({ employee: new mongoose.Types.ObjectId(req.query.employee) });
+          if (matchedEmp) {
+            andConditions.push({
+              $or: [{ employee: matchedEmp._id }, { employeeId: matchedEmp.employeeId }],
+            });
+          } else {
+            andConditions.push({ employee: new mongoose.Types.ObjectId(req.query.employee) });
+          }
         }
+      }
+
+      // HR cannot access summary counts or aggregations for Salary Documents or Bank Details
+      if (userRole === ROLES.HR) {
+        andConditions.push({ documentType: { $nin: RESTRICTED_HR_CATEGORIES } });
       }
     }
 

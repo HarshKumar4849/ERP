@@ -69,7 +69,7 @@ if (appControllers['documentController']) {
   );
 
   router.route('/document/verify/:id').patch(
-    rbacMiddleware('document', 'update'),
+    rbacMiddleware('document', 'verify'),
     catchErrors(appControllers['documentController'].verify)
   );
 }
